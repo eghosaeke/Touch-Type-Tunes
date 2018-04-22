@@ -24,10 +24,23 @@ import string
 class MainWidget(BaseWidget) :
     def __init__(self):
         super(MainWidget, self).__init__()
+        self.song = 'Stems/Fetish'
+        self.audio_cont = AudioController(self.song)
+        self.gem_data = SongData()
+        self.beat_disp = BeatMatchDisplay(self.gem_data)
+        # with self.canvas.before:
+        #     # ADD BACKGROUND IMAGE TO GAME
+        #     self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="bg_pic3.jpg")
+        self.canvas.add(self.beat_disp)
+        # self.score_label = score_label()
+        # self.add_widget(self.score_label)
+        self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
 
     def on_key_down(self, keycode, modifiers):
+        print 'key-down', keycode, modifiers
+
         # play / pause toggle
-        if keycode[1] == 'p':
+        if keycode[1] == 'enter':
             self.player.toggle_game()
 
         #pass spacebar values to player as " "
@@ -36,23 +49,23 @@ class MainWidget(BaseWidget) :
             print "down ", "spacebar"
 
         # button down
-        letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
+        letter = lookup(keycode[1], string.ascii_letters, list(set(string.ascii_letters)))
         if letter != None:
             self.player.on_button_down(letter)
             print "down ", letter 
 
-        spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
+        spec_char = lookup(keycode[1], string.punctuation, list(set(string.punctuation)))
         if spec_char != None:
             self.player.on_button_down(spec_char)
             print "down ", spec_char
 
     def on_key_up(self, keycode):
         # button up
-        letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
+        letter = lookup(keycode[1], string.ascii_letters, list(set(string.ascii_letters)))
         if letter != None:
             self.player.on_button_up(letter)
 
-        spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
+        spec_char = lookup(keycode[1], string.punctuation, list(set(string.punctuation)))
         if spec_char != None:
             self.player.on_button_up(spec_char)
 
@@ -64,21 +77,62 @@ class MainWidget(BaseWidget) :
 # creates a song and loads it with solo and bg audio tracks
 # creates snippets for audio sound fx
 class AudioController(object):
-    def __init__(self, song_path):
+    def __init__(self, song_path,listener=None):
         super(AudioController, self).__init__()
-        self.audio = Audio(2)
+        if listener:
+            self.audio = Audio(2,listener)
+        else:
+            self.audio = Audio(2)
+        self.mixer = Mixer()
+        self.song_path = song_path
+        self.bg_audio = WaveFile(self.song_path+'_inst.wav')
+        self.solo_audio = WaveFile(self.song_path+'_vocals.wav')
+        # self.miss_sfx = WaveFile("break.wav")
+        self.bg_gen = WaveGenerator(self.bg_audio)
+        self.solo_gen = WaveGenerator(self.solo_audio)
+        # self.miss_sfx_gen = WaveGenerator(self.miss_sfx)
+        # self.miss_sfx_gen.set_gain(2.0)
+        self.audio.set_generator(self.mixer)
+
+    def start(self):
+        if self.mixer.contains(self.bg_gen):
+            """
+            Needed to restart game
+            """
+            self.bg_gen.release()
+            self.solo_gen.release()
+        self.bg_gen = WaveGenerator(self.bg_audio)
+        self.solo_gen = WaveGenerator(self.solo_audio)
+        self.bg_gen.set_gain(0.5)
+        self.solo_gen.set_gain(0.5)
+        self.mixer.add(self.bg_gen)
+        self.mixer.add(self.solo_gen)
 
     # start / stop the song
     def toggle(self):
-        pass
-
+        self.bg_gen.play_toggle()
+        self.solo_gen.play_toggle()
+        
     # mute / unmute the solo track
     def set_mute(self, mute):
-        pass
+        if mute:
+            self.solo_gen.set_gain(0.1)
+        else:
+            self.solo_gen.set_gain(1)
 
     # play a sound-fx (miss sound)
     def play_sfx(self):
-        pass
+        miss_sfx = WaveFile("break.wav")
+        miss_sfx_gen = WaveGenerator(self.miss_sfx)
+        miss_sfx_gen.set_gain(1.5)
+        if self.mixer.contains(miss_sfx_gen):
+            miss_sfx_gen.reset()
+            miss_sfx_gen.play()
+        else:
+            self.mixer.add(miss_sfx_gen)
+
+    def set_listener(self,listen_cb):
+        self.audio.listen_func = listen_cb
 
     # needed to update audio
     def on_update(self):
@@ -136,6 +190,11 @@ class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
 
+    def start(self):
+        pass
+
+    def toggle(self):
+        pass
     # called by Player. Causes the right thing to happen
     def gem_hit(self, gem_idx):
         pass
@@ -168,16 +227,22 @@ class Player(object):
         self.audio_ctrl = audio_ctrl
         self.display = display
         self.gem_data = gem_data
-        self.gstatus = gstatus
         self.gem_hits = 0
         self.gem_misses = 0
-        self.particle_off = stop_cb
         self.longest_streak = 0
 
 
     # called by MainWidget to play/pause game
     def toggle_game(self):
-        pass
+        if not self.game_started:
+            self.audio_ctrl.start()
+            self.display.start()
+            self.game_started = True
+            self.game_paused = False
+        else:
+            self.audio_ctrl.toggle()
+            self.display.toggle()
+            self.game_paused = not self.game_paused
 
 
     # called by MainWidget
