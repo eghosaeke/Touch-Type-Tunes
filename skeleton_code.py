@@ -28,33 +28,33 @@ class MainWidget(BaseWidget) :
     def on_key_down(self, keycode, modifiers):
         # play / pause toggle
         if keycode[1] == 'p':
-            pass
+            self.player.toggle_game()
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            pass
+            self.player.on_button_down(" ")
 
         # button down
         letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
         if letter != None:
-            print 'down', letter
+            self.player.on_button_down(letter)
 
         spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
         if spec_char != None:
-            print 'down', spec_char
+            self.player.on_button_down(spec_char)
 
     def on_key_up(self, keycode):
         # button up
         letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
         if letter != None:
-            print 'down', letter
+            self.player.on_button_up(letter)
 
         spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
         if spec_char != None:
-            print 'down', spec_char
+            self.player.on_button_up(spec_char)
 
     def on_update(self) :
-        pass
+        self.player.on_update()
 
 
 # creates the Audio driver
@@ -171,22 +171,29 @@ class Player(object):
         self.particle_off = stop_cb
         self.longest_streak = 0
 
+
+    # called by MainWidget to play/pause game
+    def toggle_game(self):
+        pass
+
+
     # called by MainWidget
     def on_button_down(self, char):
         
         curr_lyric = self.display.curr_lyric
 
         if curr_lyric.next_avail == char:
-            self.display.on_down(char,True)
+            self.display.on_button_down(char,True)
 
-        self.display.on_down(char,False)
+        self.display.on_button_down(char,False)
 
     # called by MainWidget
     def on_button_up(self, char):
-        pass
+        self.display.on_button_up(char)
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
-        pass
+        self.audio_ctrl.on_update()
+        self.display.on_update()
 
 run(MainWidget)
