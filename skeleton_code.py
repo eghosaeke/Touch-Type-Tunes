@@ -33,15 +33,18 @@ class MainWidget(BaseWidget) :
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
             self.player.on_button_down(" ")
+            print "down ", "spacebar"
 
         # button down
         letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
         if letter != None:
             self.player.on_button_down(letter)
+            print "down ", letter 
 
         spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
         if spec_char != None:
             self.player.on_button_down(spec_char)
+            print "down ", spec_char
 
     def on_key_up(self, keycode):
         # button up
