@@ -18,6 +18,7 @@ from kivy.clock import Clock as kivyClock
 import random
 import numpy as np
 import bisect
+import string
 
 
 class MainWidget(BaseWidget) :
@@ -29,16 +30,28 @@ class MainWidget(BaseWidget) :
         if keycode[1] == 'p':
             pass
 
+        #pass spacebar values to player as " "
+        if keycode[1] == 'spacebar':
+            pass
+
         # button down
-        button_idx = lookup(keycode[1], '12345', (0,1,2,3,4))
-        if button_idx != None:
-            print 'down', button_idx
+        letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
+        if letter != None:
+            print 'down', letter
+
+        spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
+        if spec_char != None:
+            print 'down', spec_char
 
     def on_key_up(self, keycode):
         # button up
-        button_idx = lookup(keycode[1], '12345', (0,1,2,3,4))
-        if button_idx != None:
-            print 'up', button_idx
+        letter = lookup(keycode[1], string.ascii_letters, set(string.ascii_letters))
+        if letter != None:
+            print 'down', letter
+
+        spec_char = lookup(keycode[1], string.punctuation, set(string.punctuation))
+        if spec_char != None:
+            print 'down', spec_char
 
     def on_update(self) :
         pass
@@ -129,11 +142,11 @@ class BeatMatchDisplay(InstructionGroup):
         pass
 
     # called by Player. Causes the right thing to happen
-    def on_button_down(self, lane, hit):
+    def on_button_down(self, char, hit):
         pass
 
     # called by Player. Causes the right thing to happen
-    def on_button_up(self, lane):
+    def on_button_up(self, char):
         pass
 
     # call every frame to make gems and barlines flow down the screen
@@ -147,13 +160,29 @@ class BeatMatchDisplay(InstructionGroup):
 class Player(object):
     def __init__(self, gem_data, display, audio_ctrl):
         super(Player, self).__init__()
+        self.game_started = False
+        self.game_paused = True
+        self.audio_ctrl = audio_ctrl
+        self.display = display
+        self.gem_data = gem_data
+        self.gstatus = gstatus
+        self.gem_hits = 0
+        self.gem_misses = 0
+        self.particle_off = stop_cb
+        self.longest_streak = 0
 
     # called by MainWidget
-    def on_button_down(self, lane):
-        pass
+    def on_button_down(self, char):
+        
+        curr_lyric = self.display.curr_lyric
+
+        if curr_lyric.next_avail == char:
+            self.display.on_down(char,True)
+
+        self.display.on_down(char,False)
 
     # called by MainWidget
-    def on_button_up(self, lane):
+    def on_button_up(self, char):
         pass
 
     # needed to check if for pass gems (ie, went past the slop window)
