@@ -27,6 +27,7 @@ class MainWidget(BaseWidget) :
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
+        self.gem_data.read_data('Stems/Fetish-Full.txt')
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
@@ -143,11 +144,17 @@ class AudioController(object):
 class SongData(object):
     def __init__(self):
         super(SongData, self).__init__()
-
+        self.word_list= []
     # read the gems and song data. You may want to add a secondary filepath
     # argument if your barline data is stored in a different txt file.
-    def read_data(self, filepath):
-        pass
+    def read_data(self, words_filepath):
+        words = open(words_filepath).readlines()
+
+        for word in words:
+            (start_sec, text) = word.strip().split('\t')
+            self.word_list.append((float(start_sec),text))
+
+
 
     # TODO: figure out how gem and barline data should be accessed...
 
