@@ -16,6 +16,8 @@ from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.clock import Clock as kivyClock
 from kivy.core.text import Label
 from kivy.core.text.text_layout import layout_text
+from kivy.core.text import Label as CoreLabel
+from kivy.core.text.markup import MarkupLabel
 
 import random
 import numpy as np
@@ -24,6 +26,7 @@ import string
 import matplotlib.colors as colors
 from colorsys import hsv_to_rgb
 from collections import deque
+import re
 
 def score_label():
     l = Label(text = "Score", valign='top', font_size='20sp',
@@ -56,6 +59,13 @@ class MainWidget(BaseWidget):
         # self.score_label = score_label()
         # self.add_widget(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
+        self.hello = CustomLabel("HELLO WORLD")
+        self.hello.set_color(6,(0,1,0))
+        # self.hello.set_bold(0)
+        self.hello.set_color(6,(0,0,1))
+        for i in range(5):
+            self.hello.set_color(i,(0,1,0))
+        self.canvas.add(Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture))
 
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
@@ -178,6 +188,137 @@ class SongData(object):
 
     # TODO: figure out how gem and barline data should be accessed...
 
+class CustomLabel(object):
+    """
+    Class to encapsulate CoreLabel() and MarkupLabel() for more text editing
+    flexibility
+
+    Creates labels for interactivity
+
+    Parameters
+    ----------
+    text: str
+        String representing text you want the texture for
+    **kwargs: args
+        Additional arguments need for more fine control of label placement
+        See https://kivy.org/docs/api-kivy.core.text.html
+    """
+    def __init__(self,text,**kwargs):
+        super(CustomLabel, self).__init__()
+        
+        self.text = text
+        self.label = MarkupLabel(text=self.text,font_size=50,color=(1,0,0,1),**kwargs)
+        self.markup_regex = re.compile("\[(.*?)\]")
+        self.def_regex = re.compile("\[/*(color(=#\w+)*|b|i)\]")
+        self.text_dict = {i:self.text[i] for i in range(len(self.text))}
+        self.label.refresh()
+
+
+    def set_color(self,idx,color):
+        """
+        Function to change the color of an individual character in the label
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        color: tuple(r,g,b,a)
+            tuple containing rgba values mapped on scale from 0 to 1
+        """
+        hexcolor = colors.rgb2hex(color)
+        old_text = self.text_dict[idx]
+        match = self.def_regex.match(old_text)
+        if match:
+            new_text = re.sub('#\w+',hexcolor,old_text)
+        else:
+            new_text = "[color=%s]" % hexcolor + old_text[0]+ "[/color]" + old_text[1:]
+        self.text_dict[idx] = new_text
+        render_text = self.join_text()
+        self.label.text = render_text
+        self.label.refresh()
+
+    def set_bold(self,idx):
+        """
+        Function to bold an individual character in the label
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        """
+        old_text = self.text_dict[idx]
+        match = self.def_regex.match(old_text)
+        if match:
+            new_text = self.def_regex.sub("",old_text)
+        else:
+            new_text = "[b]" + old_text[0]+ "[/b]"
+        self.text_dict[idx] = new_text
+        render_text = self.join_text()
+        self.label.text = render_text
+        self.label.refresh()
+
+
+    def set_italic(self,idx):
+        """
+        Function to italicize an individual character in the label
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        """
+        old_text = self.text_dict[idx]
+        match = self.def_regex.match(old_text)
+        if match:
+            new_text = self.def_regex.sub("",old_text)
+        else:
+            new_text = "[i]" + old_text[0]+ "[/i]"
+        self.text_dict[idx] = new_text
+        render_text = self.join_text()
+        self.label.text = render_text
+        self.label.refresh()
+    
+    def join_text(self):
+        """
+        Function to join the values of the text_dict into a single string for rendering
+        """
+        text = "".join(self.text_dict.values())
+        return text
+
+    @property
+    def texture(self):
+        return self.label.texture
+
+    
+
+
+
+class LyricsPhrase(InstructionGroup):
+    def __init__(self,pos,color,text):
+        super(LyricsPhrase, self).__init__()
+        self.label = CustomLabel(text)
+
+
+
+
+
+
+    #Use self.label set_color() function to change color of text at an index 
+    def on_hit(self,letter):
+        pass
+
+    
+
+    def on_miss(self):
+        pass
+
+
+
+
+
+
+    # cpos = property(get_cpos, set_cpos)
+    # size = property(get_csize, set_csize)
 
 
 # display for a single gem at a position with a color (if desired)
