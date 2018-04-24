@@ -67,6 +67,10 @@ class MainWidget(BaseWidget):
             self.hello.set_color(i,(0,1,0))
         self.canvas.add(Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture))
 
+        
+        self.lyric= LyricsPhrase((100,100),(1,0,0),"lyric goes here")
+        self.canvas.add(self.lyric)
+
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
 
@@ -76,8 +80,10 @@ class MainWidget(BaseWidget):
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            self.player.on_button_down(" ")
+            # self.player.on_button_down(" ")
             print "down ", "spacebar"
+
+            self.lyric.on_hit(3)
 
         # button down
         letter = lookup(keycode[1], string.ascii_letters, list(set(string.ascii_letters)))
@@ -296,7 +302,11 @@ class CustomLabel(object):
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text):
         super(LyricsPhrase, self).__init__()
-        self.label = CustomLabel(text)
+        self.label = CustomLabel(text, pos=pos)
+
+        for i in range(len(text)):
+            self.label.set_color(i,color)
+
 
 
 
@@ -304,13 +314,16 @@ class LyricsPhrase(InstructionGroup):
 
 
     #Use self.label set_color() function to change color of text at an index 
-    def on_hit(self,letter):
-        pass
+    def on_hit(self,letter_idx):
+        green=(0,1,0,1)
+        self.label.set_color(letter_idx,green)
+        self.label.set_bold(letter_idx+1)
 
     
 
     def on_miss(self):
-        pass
+        red=(1,0,0,1)
+        self.label.set_color(letter_idx,green)
 
 
 
