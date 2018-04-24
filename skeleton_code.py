@@ -59,7 +59,12 @@ class MainWidget(BaseWidget):
         # self.score_label = score_label()
         # self.add_widget(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
-        self.hello = CustomLabel("HELLO WORLD",font_size=50)
+        test_text = "HELLO WOLRD"
+        test_text += "\nFinal Score: "+"{:,}".format(65464163)
+        test_text += "\nLongest Streak: "+"{:,}".format(5264)
+        test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
+        test_text += "\n\nPress 'r' to restart the game"
+        self.hello = CustomLabel(test_text,font_size=50,invert_text=True)
         self.hello.set_color(6,(0,1,0))
         # self.hello.set_bold(0)
         self.hello.set_color(6,(0,0,1))
@@ -223,16 +228,30 @@ class CustomLabel(object):
         Additional arguments need for more fine control of label placement
         See https://kivy.org/docs/api-kivy.core.text.html
     """
-    def __init__(self,text,font_size=20,color=(1,1,1,1),**kwargs):
+    def __init__(self,text,font_size=20,color=(1,1,1,1),invert_text=False,**kwargs):
         super(CustomLabel, self).__init__()
         if len(color) == 3:
             color = [c for c in color]+[1]
-        self.text = text
+        self.invert_text = invert_text
+        self.text_dict = {i:text[i] for i in range(len(text))}
+        self.text = self.parse_text(text,invert_text)
         self.label = MarkupLabel(text=self.text,font_size=font_size,color=color,**kwargs)
         self.markup_regex = re.compile("(\[.+\])")
         self.def_regex = re.compile("(\[/*(color(=#\w+)*|b|i)\])")
-        self.text_dict = {i:self.text[i] for i in range(len(self.text))}
+        
         self.label.refresh()
+
+    def parse_text(self,text,invert):
+        fin_txt = ""
+        if invert:
+            split_txt = text.strip().split("\n")
+            split_txt = split_txt[::-1]
+            stitched = "\n".join(split_txt)
+            return stitched
+        else:
+            return text
+        
+
 
 
     def set_color(self,idx,color):
@@ -326,8 +345,15 @@ class CustomLabel(object):
         """
         Function to join the values of the text_dict into a single string for rendering
         """
-        text = "".join(self.text_dict.values())
-        return text
+        if not self.invert_text:
+            text = "".join(self.text_dict.values())
+            return text
+        else:
+            text = "".join(self.text_dict.values())
+            split_txt = text.strip().split("\n")
+            split_txt = split_txt[::-1]
+            stitched = "\n".join(split_txt)
+            return stitched
 
     @property
     def texture(self):
