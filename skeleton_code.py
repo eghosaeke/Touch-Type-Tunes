@@ -224,6 +224,10 @@ class CustomLabel(object):
     color: tuple(r,g,b,a)
         tuple containing rgba values mapped on scale from 0 to 1
         Default: (1,1,1,1)
+    invert_text: bool
+        Flag to signify if multi-line text should be displayed from top to bottom or vice versa.
+        Original index order of text is preserved
+        Default: False (i.e top to bottom) 
     **kwargs: args
         Additional arguments need for more fine control of label placement
         See https://kivy.org/docs/api-kivy.core.text.html
@@ -328,6 +332,14 @@ class CustomLabel(object):
         self.label.refresh()
 
     def clear_markups(self,idx):
+        """
+        Function to clear all markups currently affecting a character at idx
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        """
         old_text = self.text_dict[idx]
         match = self.def_regex.match(old_text)
         if match:
@@ -338,6 +350,9 @@ class CustomLabel(object):
             self.label.refresh()
 
     def clear_all_markups(self):
+        """
+        Clears all user added markups to the text
+        """
         map(self.clear_markups,self.text_dict)
 
     
