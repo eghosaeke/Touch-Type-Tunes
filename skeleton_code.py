@@ -59,13 +59,16 @@ class MainWidget(BaseWidget):
         # self.score_label = score_label()
         # self.add_widget(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
-        self.hello = CustomLabel("HELLO WORLD")
+        self.hello = CustomLabel("HELLO WORLD",font_size=50)
         self.hello.set_color(6,(0,1,0))
         # self.hello.set_bold(0)
         self.hello.set_color(6,(0,0,1))
+        self.hello.set_bold(6)
+        self.hello.set_italic(6)
         for i in range(5):
             self.hello.set_color(i,(0,1,0))
-        self.canvas.add(Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture))
+        self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        self.canvas.add(self.rect)
 
         
         self.lyric= LyricsPhrase((100,100),(1,0,0),"lyric goes here")
@@ -74,6 +77,11 @@ class MainWidget(BaseWidget):
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
 
+
+        if keycode[1] == 'tab':
+            print "CLEARING MARKUP"
+            self.hello.clear_all_markups()
+            self.rect.texture=self.hello.texture
         # play / pause toggle
         if keycode[1] == 'enter':
             self.player.toggle_game()
@@ -205,17 +213,24 @@ class CustomLabel(object):
     ----------
     text: str
         String representing text you want the texture for
+    font_size: int
+        Number representing pixel size of text
+        Default: 20
+    color: tuple(r,g,b,a)
+        tuple containing rgba values mapped on scale from 0 to 1
+        Default: (1,1,1,1)
     **kwargs: args
         Additional arguments need for more fine control of label placement
         See https://kivy.org/docs/api-kivy.core.text.html
     """
-    def __init__(self,text,**kwargs):
+    def __init__(self,text,font_size=20,color=(1,1,1,1),**kwargs):
         super(CustomLabel, self).__init__()
-        
+        if len(color) == 3:
+            color = [c for c in color]+[1]
         self.text = text
-        self.label = MarkupLabel(text=self.text,font_size=50,color=(1,0,0,1),**kwargs)
-        self.markup_regex = re.compile("\[(.*?)\]")
-        self.def_regex = re.compile("\[/*(color(=#\w+)*|b|i)\]")
+        self.label = MarkupLabel(text=self.text,font_size=font_size,color=color,**kwargs)
+        self.markup_regex = re.compile("(\[.+\])")
+        self.def_regex = re.compile("(\[/*(color(=#\w+)*|b|i)\])")
         self.text_dict = {i:self.text[i] for i in range(len(self.text))}
         self.label.refresh()
 
@@ -231,13 +246,16 @@ class CustomLabel(object):
         color: tuple(r,g,b,a)
             tuple containing rgba values mapped on scale from 0 to 1
         """
-        hexcolor = colors.rgb2hex(color)
+        hexcolor = colors.to_hex(color,keep_alpha=True)
         old_text = self.text_dict[idx]
-        match = self.def_regex.match(old_text)
+        color_regex = re.compile("\[/*color(=#\w+)*\]")
+        match = color_regex.match(old_text)
         if match:
             new_text = re.sub('#\w+',hexcolor,old_text)
         else:
-            new_text = "[color=%s]" % hexcolor + old_text[0]+ "[/color]" + old_text[1:]
+            markups = self.markup_regex.split(old_text)
+            new_text = ["[color=%s]" % hexcolor] + markups+ ["[/color]"]
+            new_text = "".join(new_text)
         self.text_dict[idx] = new_text
         render_text = self.join_text()
         self.label.text = render_text
@@ -253,11 +271,14 @@ class CustomLabel(object):
             Number representing index in string of the char to manipulate
         """
         old_text = self.text_dict[idx]
-        match = self.def_regex.match(old_text)
+        bold_regex = re.compile("\[/*b\]")
+        match = bold_regex.match(old_text)
         if match:
-            new_text = self.def_regex.sub("",old_text)
+            new_text = bold_regex.sub("",old_text)
         else:
-            new_text = "[b]" + old_text[0]+ "[/b]"
+            markups = self.markup_regex.split(old_text)
+            new_text = ["[b]"] + markups+ ["[/b]"]
+            new_text = "".join(new_text)
         self.text_dict[idx] = new_text
         render_text = self.join_text()
         self.label.text = render_text
@@ -274,15 +295,32 @@ class CustomLabel(object):
             Number representing index in string of the char to manipulate
         """
         old_text = self.text_dict[idx]
-        match = self.def_regex.match(old_text)
+        italic_regex = re.compile("\[/*i\]")
+        match = italic_regex.match(old_text)
         if match:
-            new_text = self.def_regex.sub("",old_text)
+            new_text = italic_regex.sub("",old_text)
         else:
-            new_text = "[i]" + old_text[0]+ "[/i]"
+            markups = self.markup_regex.split(old_text)
+            new_text = ["[i]"] + markups+ ["[/i]"]
+            new_text = "".join(new_text)
         self.text_dict[idx] = new_text
         render_text = self.join_text()
         self.label.text = render_text
         self.label.refresh()
+
+    def clear_markups(self,idx):
+        old_text = self.text_dict[idx]
+        match = self.def_regex.match(old_text)
+        if match:
+            new_text = self.def_regex.sub("",old_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+
+    def clear_all_markups(self):
+        map(self.clear_markups,self.text_dict)
+
     
     def join_text(self):
         """
