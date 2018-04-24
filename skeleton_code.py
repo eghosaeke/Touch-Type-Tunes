@@ -14,14 +14,34 @@ from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
 from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
 from kivy.clock import Clock as kivyClock
+from kivy.core.text import Label
+from kivy.core.text.text_layout import layout_text
 
 import random
 import numpy as np
 import bisect
 import string
+import matplotlib.colors as colors
+from colorsys import hsv_to_rgb
+from collections import deque
 
+def score_label():
+    l = Label(text = "Score", valign='top', font_size='20sp',
+              pos=(Window.width*1.3, Window.height*0.4),
+              text_size=(Window.width, Window.height))
+    return l
 
-class MainWidget(BaseWidget) :
+def end_label(text):
+    l = Label(text = text, valign = 'top', halign = 'center',font_size = '50sp',
+              pos = (Window.width*0.35,Window.height*0.25),
+              text_size = (Window.width,Window.height), color=(1,0,0,1))
+    return l
+
+# Use matplotlib colors as follows:
+# colors.hex2color('#ffffff')        #==> (1.0, 1.0, 1.0)
+# colors.rgb2hex((1.0, 1.0, 1.0))    #==> '#ffffff'
+
+class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
         self.song = 'Stems/Fetish'
@@ -190,6 +210,7 @@ class ButtonDisplay(InstructionGroup):
     # back to normal state
     def on_up(self):
         pass
+
 
 
 # Displays and controls all game elements: Nowbar, Buttons, BarLines, Gems.
