@@ -391,7 +391,8 @@ class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text,start_t,end_t):
         super(LyricsPhrase, self).__init__()
         self.text=text
-        self.label = CustomLabel(text, pos=pos,color=color, font_size=50)
+        self.pos = np.array(pos, dtype=np.float)
+        self.label = CustomLabel(text,color=color, font_size=50)
         self.current=0
         self.next_avail = text[self.current]
         self.start_time = start_t
@@ -399,7 +400,7 @@ class LyricsPhrase(InstructionGroup):
         self.scroll_t = self.end_time - self.start_time
         self.vel = -self.pos[1]/self.scroll_t
         self.time = 0
-        self.pos  = pos
+        
         self.added_lyric = False
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
         print self.next_avail, "TYPE THIS"
@@ -417,8 +418,12 @@ class LyricsPhrase(InstructionGroup):
         new_text = self.label.texture
         self.rect.texture = new_text
         self.add(self.rect)
-        self.current +=1
-        self.next_avail=self.text[self.current]
+        self.current += 1
+        try:
+            self.next_avail=self.text[self.current]
+        except Exception as e:
+            print e
+            print "END OF LYRIC"
 
 
     
@@ -485,14 +490,20 @@ class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
         self.start_pos = (Window.width/3.0,Window.height+50)
-        self.lyric= LyricsPhrase(self.start_pos,(1,1,1),"lyric goes here")
-        self.add(self.lyric)
+        self.objects = AnimGroup()
+        self.add(self.objects)
+        self.lyric= LyricsPhrase(self.start_pos,(1,1,1),"lyric goes here",1.065465, 10.565464)
+        self.game_paused = True
+        self.game_started = False
+        self.objects.add(self.lyric)
 
     def start(self):
-        pass
+        self.game_paused = False
+        self.game_started = True
 
     def toggle(self):
-        pass
+        self.game_paused = not self.game_paused
+        
     # called by Player. Causes the right thing to happen
     def gem_hit(self, gem_idx):
         pass
@@ -511,7 +522,9 @@ class BeatMatchDisplay(InstructionGroup):
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
-        pass
+        if not self.game_paused:
+            self.objects.on_update()
+        
 
 
 
