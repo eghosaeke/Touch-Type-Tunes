@@ -193,15 +193,40 @@ class AudioController(object):
 class SongData(object):
     def __init__(self):
         super(SongData, self).__init__()
-        self.word_list= []
+        self.list= []
+        self.all_words=[]
+        self.phrases=[]
+        self.phrases_dict = {}
     # read the gems and song data. You may want to add a secondary filepath
     # argument if your barline data is stored in a different txt file.
     def read_data(self, words_filepath):
         words = open(words_filepath).readlines()
 
+        phrase = ""
+        start_time = None
+        end_time = None
         for word in words:
+            print "phrase: ",phrase
+            print "Start: ", start_time
+            print "End: ", end_time
             (start_sec, text) = word.strip().split('\t')
-            self.word_list.append((float(start_sec),text))
+            if "." not in text:
+                phrase += text + " "
+                if not start_time:
+                  start_time = float(start_sec)
+            else:
+                phrase = phrase.rstrip(" ")
+                if not end_time:
+                    end_time = float(start_sec)
+                    self.phrases_dict[phrase] = (start_time,end_time)
+                    phrase = ""
+                    start_time,end_time = None,None
+            self.list.append((text,start_sec))
+            self.all_words.append(text)
+        
+    def get_phrases(self):
+        print self.phrases_dict
+        return self.phrases_dict
 
 
 
@@ -388,7 +413,7 @@ class CustomLabel(object):
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,start_t,end_t):
+    def __init__(self,pos,color,text,start_t,end_t,queue_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.pos = np.array(pos, dtype=np.float)
@@ -400,7 +425,7 @@ class LyricsPhrase(InstructionGroup):
         self.scroll_t = self.end_time - self.start_time
         self.vel = -self.pos[1]/self.scroll_t
         self.time = 0
-        
+        self.queue_cb = queue_cb
         self.added_lyric = False
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
         print self.next_avail, "TYPE THIS"
@@ -435,13 +460,15 @@ class LyricsPhrase(InstructionGroup):
 
     def on_update(self,dt):
         self.time += dt
-        epsilon = (self.start_time-self.time)-self.scroll_t
+        epsilon = (self.start_time-self.time)
         if epsilon < 0.0001:
             if not self.added_lyric:
                 self.add(self.rect)
             self.pos[1] += self.vel * dt
             self.rect.pos = self.pos
 
+        if self.time > self.end_time:
+            self.queue_cb()
 
         return self.time < self.end_time
 
@@ -489,17 +516,24 @@ class ButtonDisplay(InstructionGroup):
 class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
-        self.start_pos = (Window.width/3.0,Window.height+50)
+        self.start_pos = (50,Window.height+50)
+        self.gem_data = gem_data
         self.objects = AnimGroup()
         self.add(self.objects)
-        self.lyric= LyricsPhrase(self.start_pos,(1,1,1),"lyric goes here",1.065465, 10.565464)
         self.game_paused = True
         self.game_started = False
-        self.objects.add(self.lyric)
+        self.lyrics_deque = deque()
 
     def start(self):
+        phrases = self.gem_data.get_phrases()
+        for phrase in phrases:
+            start,end = phrases[phrase]
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,start,end,self.pop_lyric)
+            self.objects.add(lyric)
+            self.lyrics_deque.append(lyric)
         self.game_paused = False
         self.game_started = True
+        self.curr_lyric = self.lyrics_deque[0]
 
     def toggle(self):
         self.game_paused = not self.game_paused
@@ -519,6 +553,9 @@ class BeatMatchDisplay(InstructionGroup):
     # called by Player. Causes the right thing to happen
     def on_button_up(self, char):
         pass
+    def pop_lyric(self):
+        self.lyrics_deque.popleft()
+        self.curr_lyric = self.lyrics_deque[0]
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
@@ -559,15 +596,15 @@ class Player(object):
     # called by MainWidget
     def on_button_down(self, char):
         char=char.lower()
-        curr_lyric = self.display.lyric
+        curr_lyric = self.display.curr_lyric
        
 
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
             print curr_lyric.current
-            self.display.lyric.on_hit(curr_lyric.current)
+            self.display.curr_lyric.on_hit(curr_lyric.current)
         else:
-           self.display.lyric.on_miss(curr_lyric.current) 
+           self.display.curr_lyric.on_miss(curr_lyric.current) 
 
 
         #self.display.on_button_down(char,False)
@@ -575,7 +612,7 @@ class Player(object):
     # called by MainWidget
     def on_button_up(self, char):
         self.display.on_button_up(char)
-        print self.display.lyric.next_avail, "TYPE THIS"
+        print self.display.curr_lyric.next_avail, "TYPE THIS"
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
