@@ -50,7 +50,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-Full.txt')
+        self.gem_data.read_data('Stems/Fetish-Full_less_bugs.txt')
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
@@ -59,6 +59,7 @@ class MainWidget(BaseWidget):
         # self.score_label = score_label()
         # self.add_widget(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
+        self.caps_on = False
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
@@ -81,11 +82,9 @@ class MainWidget(BaseWidget):
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
 
+        if keycode[1] == 'capslock':
+            self.caps_on = not self.caps_on
 
-        if keycode[1] == 'tab':
-            print "CLEARING MARKUP"
-            self.hello.clear_all_markups()
-            self.rect.texture=self.hello.texture
         # play / pause toggle
         if keycode[1] == 'enter':
             self.player.toggle_game()
@@ -98,13 +97,15 @@ class MainWidget(BaseWidget):
             
 
         # button down
-        letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
+        letter = lookup(keycode[1], string.ascii_letters, string.ascii_letters)
         if letter != None:
+            if self.caps_on or 'shift' in modifiers:
+                letter = letter.upper()
             self.player.on_button_down(letter)
 
             print "down ", letter , keycode[1]
 
-        spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
+        spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
         if spec_char != None:
             self.player.on_button_down(spec_char)
             print "down ", spec_char
@@ -217,8 +218,9 @@ class SongData(object):
             else:
                 print "phrase end: ", phrase
                 print "end text: ", text
-                if text not in phrase:
-                    phrase += text
+                split_txt = phrase.strip().split(' ')
+                if text[:-1] != split_txt[-1]:
+                    phrase += text[:-1]
                 phrase = phrase.rstrip(" ")
                 if not end_time:
                     end_time = float(start_sec)
@@ -425,18 +427,18 @@ class LyricsPhrase(InstructionGroup):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.pos = np.array(pos, dtype=np.float)
-        self.label = CustomLabel(text,color=color, font_size=50)
+        self.label = CustomLabel(text,color=color, font_size=35)
         self.current=0
         self.next_avail = text[self.current]
         self.start_time = start_t
         self.end_time = end_t
         self.scroll_t = self.end_time - self.start_time
+        # self.scroll_t = 25
         self.vel = -self.pos[1]/self.scroll_t
         self.time = 0
         self.queue_cb = queue_cb
         self.added_lyric = False
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
-        print self.next_avail, "TYPE THIS"
 
 
 
@@ -477,8 +479,11 @@ class LyricsPhrase(InstructionGroup):
 
         if self.time > self.end_time:
             self.queue_cb()
+        # if self.pos[1] < 0:
+        #     self.queue_cb()
 
         return self.time < self.end_time
+        # return self.pos[1] > 0
 
 
 
@@ -603,10 +608,7 @@ class Player(object):
 
     # called by MainWidget
     def on_button_down(self, char):
-        char=char.lower()
         curr_lyric = self.display.curr_lyric
-       
-
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
             print curr_lyric.current
@@ -620,7 +622,6 @@ class Player(object):
     # called by MainWidget
     def on_button_up(self, char):
         self.display.on_button_up(char)
-        print self.display.curr_lyric.next_avail, "TYPE THIS"
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
