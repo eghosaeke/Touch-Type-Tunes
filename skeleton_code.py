@@ -76,9 +76,7 @@ class MainWidget(BaseWidget):
         self.canvas.add(self.rect)
 
         
-        self.lyric= LyricsPhrase((Window.width/3,Window.height/2),(1,0,0),"lyric goes here")
-        print self.lyric.label.text
-        self.canvas.add(self.lyric)
+        
 
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
@@ -97,26 +95,27 @@ class MainWidget(BaseWidget):
             # self.player.on_button_down(" ")
             print "down ", "spacebar"
 
-            self.lyric.on_hit(3)
+            
 
         # button down
-        letter = lookup(keycode[1], string.ascii_letters, list(set(string.ascii_letters)))
+        letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
         if letter != None:
             self.player.on_button_down(letter)
-            print "down ", letter 
 
-        spec_char = lookup(keycode[1], string.punctuation, list(set(string.punctuation)))
+            print "down ", letter , keycode[1]
+
+        spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
         if spec_char != None:
             self.player.on_button_down(spec_char)
             print "down ", spec_char
 
     def on_key_up(self, keycode):
         # button up
-        letter = lookup(keycode[1], string.ascii_letters, list(set(string.ascii_letters)))
+        letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
         if letter != None:
             self.player.on_button_up(letter)
 
-        spec_char = lookup(keycode[1], string.punctuation, list(set(string.punctuation)))
+        spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
         if spec_char != None:
             self.player.on_button_up(spec_char)
 
@@ -382,13 +381,16 @@ class CustomLabel(object):
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text):
         super(LyricsPhrase, self).__init__()
+        self.text=text
         self.label = CustomLabel(text, pos=pos,color=color, font_size=50)
-
+        self.current=0
+        self.next_avail= text[self.current]
         for i in range(len(text)):
             self.label.set_color(i,color)
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
         self.add(self.rect)
+        print self.next_avail, "TYPE THIS"
 
 
 
@@ -401,13 +403,16 @@ class LyricsPhrase(InstructionGroup):
         self.label.set_color(letter_idx,green)
         self.label.set_bold(letter_idx+1)
         self.add(self.rect)
+        self.current +=1
+        self.next_avail=self.text[self.current]
 
 
     
 
-    def on_miss(self):
+    def on_miss(self,letter_idx):
         red=(1,0,0,1)
-        self.label.set_color(letter_idx,green)
+        self.label.set_color(letter_idx,red)
+        self.add(self.rect)
 
 
 
@@ -455,6 +460,8 @@ class ButtonDisplay(InstructionGroup):
 class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
+        self.lyric= LyricsPhrase((Window.width/3,Window.height/2),(1,1,1),"lyric goes here")
+        self.add(self.lyric)
 
     def start(self):
         pass
@@ -513,17 +520,24 @@ class Player(object):
 
     # called by MainWidget
     def on_button_down(self, char):
-        
-        curr_lyric = self.display.curr_lyric
+        char=char.lower()
+        curr_lyric = self.display.lyric
+       
 
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
+            print curr_lyric.current
+            self.display.lyric.on_hit(curr_lyric.current)
+        else:
+           self.display.lyric.on_miss(curr_lyric.current) 
 
-        self.display.on_button_down(char,False)
+
+        #self.display.on_button_down(char,False)
 
     # called by MainWidget
     def on_button_up(self, char):
         self.display.on_button_up(char)
+        print self.display.lyric.next_avail, "TYPE THIS"
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
