@@ -272,9 +272,8 @@ class CustomLabel(object):
         try:
             hexcolor = colors.to_hex(color,keep_alpha=True)
             old_text = self.text_dict[idx]
-            print "OLD TEXT ", old_text
-            color_regex = re.compile("\[/*color(=#\w+)*\]")
-            match = color_regex.match(old_text)
+            color_regex = re.compile("(\[color=#\w+\])")
+            match = color_regex.search(old_text)
             if match:
                 new_text = re.sub('#\w+',hexcolor,old_text)
             else:
@@ -300,7 +299,7 @@ class CustomLabel(object):
         try:
             old_text = self.text_dict[idx]
             bold_regex = re.compile("\[/*b\]")
-            match = bold_regex.match(old_text)
+            match = bold_regex.search(old_text)
             if match:
                 new_text = bold_regex.sub("",old_text)
             else:
@@ -327,7 +326,7 @@ class CustomLabel(object):
         try:
             old_text = self.text_dict[idx]
             italic_regex = re.compile("\[/*i\]")
-            match = italic_regex.match(old_text)
+            match = italic_regex.search(old_text)
             if match:
                 new_text = italic_regex.sub("",old_text)
             else:
@@ -389,14 +388,20 @@ class CustomLabel(object):
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text):
+    def __init__(self,pos,color,text,start_t,end_t):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.label = CustomLabel(text, pos=pos,color=color, font_size=50)
         self.current=0
         self.next_avail = text[self.current]
+        self.start_time = start_t
+        self.end_time = end_t
+        self.scroll_t = self.end_time - self.start_time
+        self.vel = -self.pos[1]/self.scroll_t
+        self.time = 0
+        self.pos  = pos
+        self.added_lyric = False
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
-        self.add(self.rect)
         print self.next_avail, "TYPE THIS"
 
 
@@ -423,7 +428,17 @@ class LyricsPhrase(InstructionGroup):
         self.label.set_color(letter_idx,red)
         self.add(self.rect)
 
+    def on_update(self,dt):
+        self.time += dt
+        epsilon = (self.start_time-self.time)-self.scroll_t
+        if epsilon < 0.0001:
+            if not self.added_lyric:
+                self.add(self.rect)
+            self.pos[1] += self.vel * dt
+            self.rect.pos = self.pos
 
+
+        return self.time < self.end_time
 
 
 
@@ -469,7 +484,8 @@ class ButtonDisplay(InstructionGroup):
 class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
-        self.lyric= LyricsPhrase((Window.width/3,Window.height/2),(1,1,1),"lyric goes here")
+        self.start_pos = (Window.width/3.0,Window.height+50)
+        self.lyric= LyricsPhrase(self.start_pos,(1,1,1),"lyric goes here")
         self.add(self.lyric)
 
     def start(self):
