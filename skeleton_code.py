@@ -64,7 +64,7 @@ class MainWidget(BaseWidget):
         test_text += "\nLongest Streak: "+"{:,}".format(5264)
         test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
         test_text += "\n\nPress 'r' to restart the game"
-        self.hello = CustomLabel(test_text,font_size=50,invert_text=True)
+        self.hello = CustomLabel(test_text,font_size=50,invert_text=True,font_name="DejaVuSans")
         self.hello.set_color(6,(0,1,0))
         # self.hello.set_bold(0)
         self.hello.set_color(6,(0,0,1))
