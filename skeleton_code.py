@@ -50,7 +50,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-Full_less_bugs.txt')
+        self.gem_data.read_data('Stems/Fetish-Full-2.txt')
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
