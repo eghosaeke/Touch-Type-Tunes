@@ -76,7 +76,8 @@ class MainWidget(BaseWidget):
         self.canvas.add(self.rect)
 
         
-        self.lyric= LyricsPhrase((100,100),(1,0,0),"lyric goes here")
+        self.lyric= LyricsPhrase((Window.width/3,Window.height/2),(1,0,0),"lyric goes here")
+        print self.lyric.label.text
         self.canvas.add(self.lyric)
 
     def on_key_down(self, keycode, modifiers):
@@ -381,11 +382,13 @@ class CustomLabel(object):
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text):
         super(LyricsPhrase, self).__init__()
-        self.label = CustomLabel(text, pos=pos)
+        self.label = CustomLabel(text, pos=pos,color=color, font_size=50)
 
         for i in range(len(text)):
             self.label.set_color(i,color)
 
+        self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
+        self.add(self.rect)
 
 
 
@@ -397,6 +400,8 @@ class LyricsPhrase(InstructionGroup):
         green=(0,1,0,1)
         self.label.set_color(letter_idx,green)
         self.label.set_bold(letter_idx+1)
+        self.add(self.rect)
+
 
     
 
