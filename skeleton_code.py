@@ -215,10 +215,15 @@ class SongData(object):
                 if not start_time:
                   start_time = float(start_sec)
             else:
+                print "phrase end: ", phrase
+                print "end text: ", text
+                if text not in phrase:
+                    phrase += text
                 phrase = phrase.rstrip(" ")
                 if not end_time:
                     end_time = float(start_sec)
                     self.phrases_dict[phrase] = (start_time,end_time)
+                    self.phrases.append((phrase,start_time,end_time))
                     phrase = ""
                     start_time,end_time = None,None
             self.list.append((text,start_sec))
@@ -228,6 +233,9 @@ class SongData(object):
         print self.phrases_dict
         return self.phrases_dict
 
+    def get_phrases_in_order(self):
+
+        return self.phrases
 
 
     # TODO: figure out how gem and barline data should be accessed...
@@ -525,9 +533,9 @@ class BeatMatchDisplay(InstructionGroup):
         self.lyrics_deque = deque()
 
     def start(self):
-        phrases = self.gem_data.get_phrases()
-        for phrase in phrases:
-            start,end = phrases[phrase]
+        phrases = self.gem_data.get_phrases_in_order()
+        for data in phrases:
+            phrase,start,end = data
             lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,start,end,self.pop_lyric)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
