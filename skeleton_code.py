@@ -59,21 +59,21 @@ class MainWidget(BaseWidget):
         # self.score_label = score_label()
         # self.add_widget(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
-        test_text = "HELLO WOLRD"
-        test_text += "\nFinal Score: "+"{:,}".format(65464163)
-        test_text += "\nLongest Streak: "+"{:,}".format(5264)
-        test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
-        test_text += "\n\nPress 'r' to restart the game"
-        self.hello = CustomLabel(test_text,font_size=50,invert_text=True,font_name="DejaVuSans")
-        self.hello.set_color(6,(0,1,0))
-        # self.hello.set_bold(0)
-        self.hello.set_color(6,(0,0,1))
-        self.hello.set_bold(6)
-        self.hello.set_italic(6)
-        for i in range(5):
-            self.hello.set_color(i,(0,1,0))
-        self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        self.canvas.add(self.rect)
+        # test_text = "HELLO WOLRD"
+        # test_text += "\nFinal Score: "+"{:,}".format(65464163)
+        # test_text += "\nLongest Streak: "+"{:,}".format(5264)
+        # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
+        # test_text += "\n\nPress 'r' to restart the game"
+        # self.hello = CustomLabel(test_text,font_size=50,invert_text=True,font_name="DejaVuSans")
+        # self.hello.set_color(6,(0,1,0))
+        # # self.hello.set_bold(0)
+        # self.hello.set_color(6,(0,0,1))
+        # self.hello.set_bold(6)
+        # self.hello.set_italic(6)
+        # for i in range(5):
+        #     self.hello.set_color(i,(0,1,0))
+        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        # self.canvas.add(self.rect)
 
         
         
@@ -92,7 +92,7 @@ class MainWidget(BaseWidget):
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            # self.player.on_button_down(" ")
+            self.player.on_button_down(" ")
             print "down ", "spacebar"
 
             
@@ -269,20 +269,24 @@ class CustomLabel(object):
         color: tuple(r,g,b,a)
             tuple containing rgba values mapped on scale from 0 to 1
         """
-        hexcolor = colors.to_hex(color,keep_alpha=True)
-        old_text = self.text_dict[idx]
-        color_regex = re.compile("\[/*color(=#\w+)*\]")
-        match = color_regex.match(old_text)
-        if match:
-            new_text = re.sub('#\w+',hexcolor,old_text)
-        else:
-            markups = self.markup_regex.split(old_text)
-            new_text = ["[color=%s]" % hexcolor] + markups+ ["[/color]"]
-            new_text = "".join(new_text)
-        self.text_dict[idx] = new_text
-        render_text = self.join_text()
-        self.label.text = render_text
-        self.label.refresh()
+        try:
+            hexcolor = colors.to_hex(color,keep_alpha=True)
+            old_text = self.text_dict[idx]
+            print "OLD TEXT ", old_text
+            color_regex = re.compile("\[/*color(=#\w+)*\]")
+            match = color_regex.match(old_text)
+            if match:
+                new_text = re.sub('#\w+',hexcolor,old_text)
+            else:
+                markups = self.markup_regex.split(old_text)
+                new_text = ["[color=%s]" % hexcolor] + markups+ ["[/color]"]
+                new_text = "".join(new_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+        except Exception as e:
+            print e
 
     def set_bold(self,idx):
         """
@@ -293,19 +297,22 @@ class CustomLabel(object):
         idx: int
             Number representing index in string of the char to manipulate
         """
-        old_text = self.text_dict[idx]
-        bold_regex = re.compile("\[/*b\]")
-        match = bold_regex.match(old_text)
-        if match:
-            new_text = bold_regex.sub("",old_text)
-        else:
-            markups = self.markup_regex.split(old_text)
-            new_text = ["[b]"] + markups+ ["[/b]"]
-            new_text = "".join(new_text)
-        self.text_dict[idx] = new_text
-        render_text = self.join_text()
-        self.label.text = render_text
-        self.label.refresh()
+        try:
+            old_text = self.text_dict[idx]
+            bold_regex = re.compile("\[/*b\]")
+            match = bold_regex.match(old_text)
+            if match:
+                new_text = bold_regex.sub("",old_text)
+            else:
+                markups = self.markup_regex.split(old_text)
+                new_text = ["[b]"] + markups+ ["[/b]"]
+                new_text = "".join(new_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+        except Exception as e:
+            print e
 
 
     def set_italic(self,idx):
@@ -317,19 +324,22 @@ class CustomLabel(object):
         idx: int
             Number representing index in string of the char to manipulate
         """
-        old_text = self.text_dict[idx]
-        italic_regex = re.compile("\[/*i\]")
-        match = italic_regex.match(old_text)
-        if match:
-            new_text = italic_regex.sub("",old_text)
-        else:
-            markups = self.markup_regex.split(old_text)
-            new_text = ["[i]"] + markups+ ["[/i]"]
-            new_text = "".join(new_text)
-        self.text_dict[idx] = new_text
-        render_text = self.join_text()
-        self.label.text = render_text
-        self.label.refresh()
+        try:
+            old_text = self.text_dict[idx]
+            italic_regex = re.compile("\[/*i\]")
+            match = italic_regex.match(old_text)
+            if match:
+                new_text = italic_regex.sub("",old_text)
+            else:
+                markups = self.markup_regex.split(old_text)
+                new_text = ["[i]"] + markups+ ["[/i]"]
+                new_text = "".join(new_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+        except Exception as e:
+            print e
 
     def clear_markups(self,idx):
         """
@@ -384,10 +394,7 @@ class LyricsPhrase(InstructionGroup):
         self.text=text
         self.label = CustomLabel(text, pos=pos,color=color, font_size=50)
         self.current=0
-        self.next_avail= text[self.current]
-        for i in range(len(text)):
-            self.label.set_color(i,color)
-
+        self.next_avail = text[self.current]
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
         self.add(self.rect)
         print self.next_avail, "TYPE THIS"
@@ -402,6 +409,8 @@ class LyricsPhrase(InstructionGroup):
         green=(0,1,0,1)
         self.label.set_color(letter_idx,green)
         self.label.set_bold(letter_idx+1)
+        new_text = self.label.texture
+        self.rect.texture = new_text
         self.add(self.rect)
         self.current +=1
         self.next_avail=self.text[self.current]
