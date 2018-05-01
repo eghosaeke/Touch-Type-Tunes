@@ -2,6 +2,7 @@
 
 
 import sys
+import os
 sys.path.append('..')
 from common.core import *
 from common.audio import *
@@ -18,6 +19,7 @@ from kivy.core.text import Label
 from kivy.core.text.text_layout import layout_text
 from kivy.core.text import Label as CoreLabel
 from kivy.core.text.markup import MarkupLabel
+from kivy.core.text import LabelBase
 
 import random
 import numpy as np
@@ -25,8 +27,59 @@ import bisect
 import string
 import matplotlib.colors as colors
 from colorsys import hsv_to_rgb
-from collections import deque
+from collections import deque, OrderedDict
 import re
+
+if os.name == "nt": 
+    font_path = "C:\\Windows\\Fonts"
+elif os.name == "mac":
+    font_path = "~/System/Library/Fonts"
+
+def fonts_to_dict(filenames):
+    print filenames
+    curr_name_reg = re.compile(filenames[0].split(".")[0])
+    all_fonts = []
+    curr_font_reg = {}
+    for filename in filenames:
+        name = filename.split(".")[0]
+        match = curr_name_reg.search(name)
+        if match:
+            split = curr_name_reg.split(name)
+            if split[1] == '':
+                curr_font_reg["name"] = name.lower()
+                curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
+            elif split[1] == 'bi':
+                curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
+            elif split[1] == 'i':
+                curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
+            elif split[1] == 'b' or split[1] == 'bd':
+                curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
+        else:
+            all_fonts.append(curr_font_reg)
+            curr_name_reg = re.compile(name)
+            curr_font_reg = {"name":name.lower(),
+                            "fn_regular":os.path.join(font_path,filename)}
+
+
+    return all_fonts
+
+font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+
+try:
+    SYSTEM_FONTS = fonts_to_dict(font_files)
+    print SYSTEM_FONTS
+    for font in SYSTEM_FONTS:
+        LabelBase.register(**font)
+except Exception as e:
+    print e
+
+
+    
+
+    
+
+
+
 
 def score_label():
     l = Label(text = "Score", valign='top', font_size='20sp',
@@ -43,6 +96,43 @@ def end_label(text):
 # Use matplotlib colors as follows:
 # colors.hex2color('#ffffff')        #==> (1.0, 1.0, 1.0)
 # colors.rgb2hex((1.0, 1.0, 1.0))    #==> '#ffffff'
+class GameStatusChecker(object):
+    """
+    Class to keep track of the status of the game
+
+    Parameters
+    ----------
+    gameover_cb: function
+        Callback function used to signal end game status and onset of
+        end game screen ui 
+    """
+    def __init__(self,gameover_cb):
+        super(GameStatusChecker, self).__init__()
+        self.game_started = False
+        self.game_paused = True
+        self.game_finished = False
+        self.gameover_cb = gameover_cb
+        self.call_once = False
+
+    
+    def audio_listener(self,data,num_ch):
+        """
+        Function to check audio data for silence signifying the end of the song
+
+        Parameters
+        ----------
+        data: numpy.ndarray
+            Audio samples
+        num_ch: int
+            Number of channels
+        """
+        if self.game_started and not self.game_paused:
+            no_data = not data.any()
+            if no_data:
+                self.game_finished = True
+                if not self.call_once:
+                    self.gameover_cb()
+                    self.call_once = True
 
 class MainWidget(BaseWidget):
     def __init__(self):
@@ -50,7 +140,8 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-Full-2.txt')
+        self.gem_data.read_data('Stems/Fetish-Full_less_bugs.txt')
+        self.gem_data.get_phrases()
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
@@ -77,8 +168,6 @@ class MainWidget(BaseWidget):
         # self.canvas.add(self.rect)
 
         
-        
-
     def on_key_down(self, keycode, modifiers):
         print 'key-down', keycode, modifiers
 
@@ -87,7 +176,10 @@ class MainWidget(BaseWidget):
 
         # play / pause toggle
         if keycode[1] == 'enter':
-            self.player.toggle_game()
+            if "shift" in modifiers:
+                self.player.toggle_game()
+            elif "ctrl" in modifiers:
+                self.player.restart_game()
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
@@ -197,7 +289,7 @@ class SongData(object):
         self.list= []
         self.all_words=[]
         self.phrases=[]
-        self.phrases_dict = {}
+        self.phrases_dict = OrderedDict()
     # read the gems and song data. You may want to add a secondary filepath
     # argument if your barline data is stored in a different txt file.
     def read_data(self, words_filepath):
@@ -207,17 +299,17 @@ class SongData(object):
         start_time = None
         end_time = None
         for word in words:
-            print "phrase: ",phrase
-            print "Start: ", start_time
-            print "End: ", end_time
+            # print "phrase: ",phrase
+            # print "Start: ", start_time
+            # print "End: ", end_time
             (start_sec, text) = word.strip().split('\t')
             if "." not in text:
                 phrase += text + " "
                 if not start_time:
                   start_time = float(start_sec)
             else:
-                print "phrase end: ", phrase
-                print "end text: ", text
+                # print "phrase end: ", phrase
+                # print "end text: ", text
                 split_txt = phrase.strip().split(' ')
                 if text[:-1] != split_txt[-1]:
                     phrase += text[:-1]
@@ -427,7 +519,7 @@ class LyricsPhrase(InstructionGroup):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.pos = np.array(pos, dtype=np.float)
-        self.label = CustomLabel(text,color=color, font_size=35)
+        self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
         self.current=0
         self.next_avail = text[self.current]
         self.start_time = start_t
@@ -548,6 +640,14 @@ class BeatMatchDisplay(InstructionGroup):
         self.game_started = True
         self.curr_lyric = self.lyrics_deque[0]
 
+    def restart(self):
+        if self.game_started:
+            self.remove(self.objects)
+            self.objects = AnimGroup()
+            self.add(self.objects)
+            self.lyrics_deque = deque()
+            self.start()
+
     def toggle(self):
         self.game_paused = not self.game_paused
         
@@ -568,7 +668,8 @@ class BeatMatchDisplay(InstructionGroup):
         pass
     def pop_lyric(self):
         self.lyrics_deque.popleft()
-        self.curr_lyric = self.lyrics_deque[0]
+        if len(self.lyrics_deque) != 0:
+            self.curr_lyric = self.lyrics_deque[0]
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
@@ -604,6 +705,13 @@ class Player(object):
             self.audio_ctrl.toggle()
             self.display.toggle()
             self.game_paused = not self.game_paused
+
+    def restart_game(self):
+        self.display.restart()
+        self.audio_ctrl.start()
+        self.gem_hits = 0
+        self.gem_misses = 0
+        self.longest_streak = 0
 
 
     # called by MainWidget
