@@ -37,8 +37,6 @@ elif os.name == "mac" or os.name == "posix":
 
 # def fonts_to_dict(filenames):
 #     print filenames
-#     if os.name == "mac" or os.name == "posix":
-#         filenames = filenames[::-1]
 #     curr_name_reg = re.compile(filenames[0].split(".")[0])
 #     all_fonts = []
 #     curr_font_reg = {}
@@ -50,11 +48,11 @@ elif os.name == "mac" or os.name == "posix":
 #             if split[1] == '':
 #                 curr_font_reg["name"] = name.lower()
 #                 curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
-#             elif split[1] == 'bi' or split[1].strip() == "Bold Italic":
+#             elif split[1] == 'bi':
 #                 curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
-#             elif split[1] == 'i' or split[1].strip() == "Italic":
+#             elif split[1] == 'i':
 #                 curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
-#             elif split[1] == 'b' or split[1] == 'bd' or split[1].strip() == "Bold":
+#             elif split[1] == 'b' or split[1] == 'bd':
 #                 curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
 #         else:
 #             all_fonts.append(curr_font_reg)
@@ -70,7 +68,6 @@ elif os.name == "mac" or os.name == "posix":
 try:
     if os.name == "nt":
         font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-        print font_files
         # SYSTEM_FONTS = fonts_to_dict(font_files)
         # print SYSTEM_FONTS
         # for font in SYSTEM_FONTS:
@@ -152,7 +149,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-Full_less_bugs.txt')
+        self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
         self.gem_data.get_phrases()
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         # with self.canvas.before:
@@ -308,6 +305,7 @@ class SongData(object):
         words = open(words_filepath).readlines()
 
         phrase = ""
+        phrase_to_type=""
         start_time = None
         end_time = None
         for word in words:
@@ -316,21 +314,28 @@ class SongData(object):
             # print "End: ", end_time
             (start_sec, text) = word.strip().split('\t')
             if "." not in text:
-                phrase += text + " "
+                if '*' in text:
+                    phrase+= text[:-1]+" "
+                    phrase_to_type += text[:-1]+" "
+                else:
+                    phrase += text + " "
                 if not start_time:
                   start_time = float(start_sec)
             else:
-                # print "phrase end: ", phrase
-                # print "end text: ", text
+                print "phrase end: ", phrase
+                print "end text: ", text
                 split_txt = phrase.strip().split(' ')
-                if text[:-1] != split_txt[-1]:
+                if text[:-1] != split_txt[-1] :
                     phrase += text[:-1]
                 phrase = phrase.rstrip(" ")
+                phrase_to_type = phrase_to_type.rstrip(" ")
+                
                 if not end_time:
                     end_time = float(start_sec)
-                    self.phrases_dict[phrase] = (start_time,end_time)
-                    self.phrases.append((phrase,start_time,end_time))
+                    self.phrases_dict[phrase] = (phrase_to_type,start_time,end_time)
+                    self.phrases.append((phrase,phrase_to_type,start_time,end_time))
                     phrase = ""
+                    phrase_to_type=""
                     start_time,end_time = None,None
             self.list.append((text,start_sec))
             self.all_words.append(text)
@@ -340,7 +345,7 @@ class SongData(object):
         return self.phrases_dict
 
     def get_phrases_in_order(self):
-
+        print self.phrases
         return self.phrases
 
 
@@ -433,6 +438,7 @@ class CustomLabel(object):
             if start != -1:
                 end = start + len(substr)
                 for idx in range(start,end):
+                    print "change",idx
                     self.set_color(idx,color)
         else:
             if start and end:
@@ -544,18 +550,21 @@ class CustomLabel(object):
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,start_t,end_t,queue_cb):
+    def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
+        self.text_to_type=text_to_type
+
+
         self.pos = np.array(pos, dtype=np.float)
         if os.name == "nt":
-            self.label = CustomLabel(text,color=color, font_size=35,font_name="JOKERMAN")
+            self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
         elif os.name == "mac" or os.name == "posix":
-            self.label = CustomLabel(text,color=color, font_size=35,font_name="Comic Sans MS")
+            self.label = CustomLabel(text,color=color, font_size=35,font_name="Georgia")
         else:
             self.label = CustomLabel(text,color=color, font_size=35)
-        self.current=0
-        self.next_avail = text[self.current]
+        self.current=self.text.find(text_to_type)
+        self.next_avail = self.text[self.current]
         self.start_time = start_t
         self.end_time = end_t
         self.scroll_t = self.end_time - self.start_time
@@ -564,6 +573,9 @@ class LyricsPhrase(InstructionGroup):
         self.time = 0
         self.queue_cb = queue_cb
         self.added_lyric = False
+
+        self.label.set_colors((0,0,1,1),text_to_type)
+
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
 
@@ -665,9 +677,11 @@ class BeatMatchDisplay(InstructionGroup):
 
     def start(self):
         phrases = self.gem_data.get_phrases_in_order()
+        print phrases
         for data in phrases:
-            phrase,start,end = data
-            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,start,end,self.pop_lyric)
+            phrase,phrase_to_type,start,end = data
+            print phrase_to_type
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,start,end,self.pop_lyric)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
         self.game_paused = False
@@ -751,9 +765,11 @@ class Player(object):
     # called by MainWidget
     def on_button_down(self, char):
         curr_lyric = self.display.curr_lyric
+        print curr_lyric.next_avail
+        print curr_lyric.text
+        print curr_lyric.current
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
-            print curr_lyric.current
             self.display.curr_lyric.on_hit(curr_lyric.current)
         else:
            self.display.curr_lyric.on_miss(curr_lyric.current) 
