@@ -33,7 +33,7 @@ import re
 if os.name == "nt": 
     font_path = "C:\\Windows\\Fonts"
 elif os.name == "mac":
-    font_path = "~/System/Library/Fonts"
+    font_path = "/System/Library/Fonts"
 
 def fonts_to_dict(filenames):
     print filenames
