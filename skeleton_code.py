@@ -35,45 +35,46 @@ if os.name == "nt":
 elif os.name == "mac" or os.name == "posix":
     font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
-def fonts_to_dict(filenames):
-    print filenames
-    if os.name == "mac" or os.name == "posix":
-        filenames = filenames[::-1]
-    curr_name_reg = re.compile(filenames[0].split(".")[0])
-    all_fonts = []
-    curr_font_reg = {}
-    for filename in filenames:
-        name = filename.split(".")[0]
-        match = curr_name_reg.search(name)
-        if match:
-            split = curr_name_reg.split(name)
-            if split[1] == '':
-                curr_font_reg["name"] = name.lower()
-                curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
-            elif split[1] == 'bi' or split[1].strip() == "Bold Italic":
-                curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
-            elif split[1] == 'i' or split[1].strip() == "Italic":
-                curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
-            elif split[1] == 'b' or split[1] == 'bd' or split[1].strip() == "Bold":
-                curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
-        else:
-            all_fonts.append(curr_font_reg)
-            curr_name_reg = re.compile(name)
-            curr_font_reg = {"name":name.lower(),
-                            "fn_regular":os.path.join(font_path,filename)}
+# def fonts_to_dict(filenames):
+#     print filenames
+#     if os.name == "mac" or os.name == "posix":
+#         filenames = filenames[::-1]
+#     curr_name_reg = re.compile(filenames[0].split(".")[0])
+#     all_fonts = []
+#     curr_font_reg = {}
+#     for filename in filenames:
+#         name = filename.split(".")[0]
+#         match = curr_name_reg.search(name)
+#         if match:
+#             split = curr_name_reg.split(name)
+#             if split[1] == '':
+#                 curr_font_reg["name"] = name.lower()
+#                 curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
+#             elif split[1] == 'bi' or split[1].strip() == "Bold Italic":
+#                 curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
+#             elif split[1] == 'i' or split[1].strip() == "Italic":
+#                 curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
+#             elif split[1] == 'b' or split[1] == 'bd' or split[1].strip() == "Bold":
+#                 curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
+#         else:
+#             all_fonts.append(curr_font_reg)
+#             curr_name_reg = re.compile(name)
+#             curr_font_reg = {"name":name.lower(),
+#                             "fn_regular":os.path.join(font_path,filename)}
 
 
-    return all_fonts
+#     return all_fonts
 
 
 
 try:
     if os.name == "nt":
         font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-        SYSTEM_FONTS = fonts_to_dict(font_files)
-        print SYSTEM_FONTS
-        for font in SYSTEM_FONTS:
-            LabelBase.register(**font)
+        print font_files
+        # SYSTEM_FONTS = fonts_to_dict(font_files)
+        # print SYSTEM_FONTS
+        # for font in SYSTEM_FONTS:
+        #     LabelBase.register(**font)
     elif os.name == "mac" or os.name == "posix":
         for font_path in font_paths:
             font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
@@ -425,6 +426,23 @@ class CustomLabel(object):
         except Exception as e:
             print e
 
+    def set_colors(self,color,substr="",start=None,end=None):
+
+        if substr:
+            start = self.text.find(substr)
+            if start != -1:
+                end = start + len(substr)
+                for idx in range(start,end):
+                    self.set_color(idx,color)
+        else:
+            if start and end:
+                for idx in range(start,end):
+                    self.set_color(idx,color)
+            elif start:
+                for idx in range(start,len(self.text)):
+                    self.set_color(idx,color)
+
+
     def set_bold(self,idx):
         """
         Function to bold an individual character in the label
@@ -531,7 +549,7 @@ class LyricsPhrase(InstructionGroup):
         self.text=text
         self.pos = np.array(pos, dtype=np.float)
         if os.name == "nt":
-            self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
+            self.label = CustomLabel(text,color=color, font_size=35,font_name="JOKERMAN")
         elif os.name == "mac" or os.name == "posix":
             self.label = CustomLabel(text,color=color, font_size=35,font_name="Comic Sans MS")
         else:
