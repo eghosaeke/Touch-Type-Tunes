@@ -32,8 +32,8 @@ import re
 
 if os.name == "nt": 
     font_path = "C:\\Windows\\Fonts"
-elif os.name == "mac":
-    font_path = "/System/Library/Fonts"
+elif os.name == "mac" or os.name == "posix":
+    font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
 def fonts_to_dict(filenames):
     print filenames
@@ -63,13 +63,22 @@ def fonts_to_dict(filenames):
 
     return all_fonts
 
-font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+
 
 try:
-    SYSTEM_FONTS = fonts_to_dict(font_files)
-    print SYSTEM_FONTS
-    for font in SYSTEM_FONTS:
-        LabelBase.register(**font)
+    if os.name == "nt":
+        font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+        SYSTEM_FONTS = fonts_to_dict(font_files)
+        print SYSTEM_FONTS
+        for font in SYSTEM_FONTS:
+            LabelBase.register(**font)
+    elif os.name == "mac" or os.name == "posix":
+        for font_path in font_paths:
+            font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+            SYSTEM_FONTS = fonts_to_dict(font_files)
+            print SYSTEM_FONTS
+            for font in SYSTEM_FONTS:
+                LabelBase.register(**font)
 except Exception as e:
     print e
 
@@ -519,7 +528,12 @@ class LyricsPhrase(InstructionGroup):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.pos = np.array(pos, dtype=np.float)
-        self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
+        if os.name == "nt":
+            self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
+        elif os.name == "mac" or os.name == "posix":
+            self.label = CustomLabel(text,color=color, font_size=35,font_name="Comic Sans MS")
+        else:
+            self.label = CustomLabel(text,color=color, font_size=35)
         self.current=0
         self.next_avail = text[self.current]
         self.start_time = start_t
