@@ -37,6 +37,8 @@ elif os.name == "mac" or os.name == "posix":
 
 def fonts_to_dict(filenames):
     print filenames
+    if os.name == "mac" or os.name == "posix":
+        filenames = filenames[::-1]
     curr_name_reg = re.compile(filenames[0].split(".")[0])
     all_fonts = []
     curr_font_reg = {}
@@ -48,11 +50,11 @@ def fonts_to_dict(filenames):
             if split[1] == '':
                 curr_font_reg["name"] = name.lower()
                 curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
-            elif split[1] == 'bi':
+            elif split[1] == 'bi' or split[1].strip() == "Bold Italic":
                 curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
-            elif split[1] == 'i':
+            elif split[1] == 'i' or split[1].strip() == "Italic":
                 curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
-            elif split[1] == 'b' or split[1] == 'bd':
+            elif split[1] == 'b' or split[1] == 'bd' or split[1].strip() == "Bold":
                 curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
         else:
             all_fonts.append(curr_font_reg)
