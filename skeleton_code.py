@@ -93,15 +93,16 @@ except Exception as e:
 
 
 def score_label():
-    l = Label(text = "Score", valign='top', font_size='20sp',
-              pos=(Window.width*1.3, Window.height*0.4),
-              text_size=(Window.width, Window.height))
-    return l
+    # l = Label(text = "Score", valign='top', font_size='20sp',
+    #           pos=(Window.width*1.3, Window.height*0.4),
+    #           text_size=(Window.width, Window.height))
+    l= CustomLabel("Score",font_size=50,invert_text=True,font_name="Comic Sans MS")
+    r= Rectangle(size=l.texture.size,pos=(Window.width*.65, Window.height*0.9),texture=l.texture)
+    return r
 
 def end_label(text):
-    l = Label(text = text, valign = 'top', halign = 'center',font_size = '50sp',
-              pos = (Window.width*0.35,Window.height*0.25),
-              text_size = (Window.width,Window.height), color=(1,0,0,1))
+    l= CustomLabel(text,font_size=60,invert_text=True,font_name="Comic Sans MS")
+    
     return l
 
 # Use matplotlib colors as follows:
@@ -158,9 +159,14 @@ class MainWidget(BaseWidget):
         #     # ADD BACKGROUND IMAGE TO GAME
         #     self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="bg_pic3.jpg")
         self.canvas.add(self.beat_disp)
-        # self.score_label = score_label()
-        # self.add_widget(self.score_label)
+        self.score_label = score_label()
+        self.canvas.add(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
+        self.end_label=end_label(str(self.player.word_hits))
+        self.r= Rectangle(size=self.end_label.texture.size,pos=(Window.width*.65, Window.height*0.8),texture=self.end_label.texture)
+
+        self.canvas.add(self.r)
+
         self.caps_on = False
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
@@ -225,6 +231,10 @@ class MainWidget(BaseWidget):
 
     def on_update(self) :
         self.player.on_update()
+        self.end_label=end_label(str(self.player.word_hits))
+        self.r.texture=self.end_label.texture
+        self.r.size=self.end_label.texture.size
+        self.canvas.add(self.r)
 
 
 # creates the Audio driver
@@ -324,8 +334,8 @@ class SongData(object):
                 if not start_time:
                   start_time = float(start_sec)
             else:
-                print "phrase end: ", phrase
-                print "end text: ", text
+                # print "phrase end: ", phrase
+                # print "end text: ", text
                 split_txt = phrase.strip().split(' ')
                 if text[:-1] != split_txt[-1] :
                     phrase += text[:-1]
@@ -343,11 +353,11 @@ class SongData(object):
             self.all_words.append(text)
         
     def get_phrases(self):
-        print self.phrases_dict
+        # print self.phrases_dict
         return self.phrases_dict
 
     def get_phrases_in_order(self):
-        print self.phrases
+        # print self.phrases
         return self.phrases
 
 
@@ -440,7 +450,6 @@ class CustomLabel(object):
             if start != -1:
                 end = start + len(substr)
                 for idx in range(start,end):
-                    print "change",idx
                     self.set_color(idx,color)
         else:
             if start and end:
@@ -556,13 +565,13 @@ class LyricsPhrase(InstructionGroup):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.text_to_type=text_to_type
-
+        self.end_of_lyric=False
 
         self.pos = np.array(pos, dtype=np.float)
         if os.name == "nt":
             self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
         elif os.name == "mac" or os.name == "posix":
-            self.label = CustomLabel(text,color=color, font_size=40,font_name="Georgia")
+            self.label = CustomLabel(text,color=color, font_size=40,font_name="Microsoft Sans Serif")
         else:
             self.label = CustomLabel(text,color=color, font_size=40)
         self.current=self.text.find(text_to_type)
@@ -597,7 +606,9 @@ class LyricsPhrase(InstructionGroup):
         self.current += 1
         try:
             self.next_avail=self.text[self.current]
+            self.end_of_lyric=False
         except Exception as e:
+            self.end_of_lyric=True
             print e
             print "END OF LYRIC"
 
@@ -740,7 +751,7 @@ class Player(object):
         self.audio_ctrl = audio_ctrl
         self.display = display
         self.gem_data = gem_data
-        self.gem_hits = 0
+        self.word_hits = 0
         self.gem_misses = 0
         self.longest_streak = 0
 
@@ -774,6 +785,10 @@ class Player(object):
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
             self.display.curr_lyric.on_hit(curr_lyric.current)
+            print curr_lyric.next_avail,"next"
+            if char == " " or curr_lyric.end_of_lyric==True:
+                self.word_hits+=100
+                print self.word_hits, "SCORE"
         else:
            self.display.curr_lyric.on_miss(curr_lyric.current) 
 
