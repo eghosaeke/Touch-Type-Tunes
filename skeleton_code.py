@@ -343,11 +343,9 @@ class SongData(object):
             self.all_words.append(text)
         
     def get_phrases(self):
-        print self.phrases_dict
         return self.phrases_dict
 
     def get_phrases_in_order(self):
-        print self.phrases
         return self.phrases
 
 
@@ -440,7 +438,6 @@ class CustomLabel(object):
             if start != -1:
                 end = start + len(substr)
                 for idx in range(start,end):
-                    print "change",idx
                     self.set_color(idx,color)
         else:
             if start and end:
@@ -575,8 +572,8 @@ class LyricsPhrase(InstructionGroup):
         self.time = 0
         self.queue_cb = queue_cb
         self.added_lyric = False
-        print text_to_type
-        print text
+        # print "text to type: ",text_to_type
+        # print "text: ",text
         self.label.set_colors((0,.87,1,1),text_to_type)
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
@@ -680,10 +677,10 @@ class BeatMatchDisplay(InstructionGroup):
 
     def start(self):
         phrases = self.gem_data.get_phrases_in_order()
-        print phrases
+        # print phrases
         for data in phrases:
             phrase,phrase_to_type,start,end = data
-            print phrase_to_type
+            # print "phrase to type: ",phrase_to_type
             lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,start,end,self.pop_lyric)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
