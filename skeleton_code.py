@@ -30,6 +30,8 @@ from colorsys import hsv_to_rgb
 from collections import deque, OrderedDict
 import re
 
+
+
 if os.name == "nt": 
     font_path = "C:\\Windows\\Fonts"
 elif os.name == "mac" or os.name == "posix":
@@ -558,11 +560,11 @@ class LyricsPhrase(InstructionGroup):
 
         self.pos = np.array(pos, dtype=np.float)
         if os.name == "nt":
-            self.label = CustomLabel(text,color=color, font_size=35,font_name="comic")
+            self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
         elif os.name == "mac" or os.name == "posix":
-            self.label = CustomLabel(text,color=color, font_size=35,font_name="Georgia")
+            self.label = CustomLabel(text,color=color, font_size=40,font_name="Georgia")
         else:
-            self.label = CustomLabel(text,color=color, font_size=35)
+            self.label = CustomLabel(text,color=color, font_size=40)
         self.current=self.text.find(text_to_type)
         self.next_avail = self.text[self.current]
         self.start_time = start_t
@@ -573,8 +575,9 @@ class LyricsPhrase(InstructionGroup):
         self.time = 0
         self.queue_cb = queue_cb
         self.added_lyric = False
-
-        self.label.set_colors((0,0,1,1),text_to_type)
+        print text_to_type
+        print text
+        self.label.set_colors((0,.87,1,1),text_to_type)
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
