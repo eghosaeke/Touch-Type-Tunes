@@ -101,7 +101,7 @@ def score_label():
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=50,font_name=font_name)
+    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
     return l
 
 def system_info_label():
@@ -198,13 +198,12 @@ class MainWidget(BaseWidget):
 
         
     def on_key_down(self, keycode, modifiers):
-        print 'key-down', keycode, modifiers
+        # print 'key-down', keycode, modifiers
 
         if keycode[1] == 'capslock':
             self.caps_on = not self.caps_on
 
         if keycode[1] == 'tab':
-            print "HIT TAB"
             self.hello.text += "\nHello World Again!"
         # play / pause toggle
         if keycode[1] == 'enter':
@@ -216,7 +215,7 @@ class MainWidget(BaseWidget):
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
             self.player.on_button_down(" ")
-            print "down ", "spacebar"
+            # print "down ", "spacebar"
 
             
 
@@ -227,7 +226,7 @@ class MainWidget(BaseWidget):
                 letter = letter.upper()
             self.player.on_button_down(letter)
 
-            print "down ", letter , keycode[1]
+            # print "down ", letter , keycode[1]
 
         spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
         if spec_char != None:
@@ -246,10 +245,10 @@ class MainWidget(BaseWidget):
 
     def on_update(self) :
         self.player.on_update()
-        self.info.text = str(Window.mouse_pos)
-        self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
-        self.info.text += '\nfps:%d' % kivyClock.get_fps()
-        self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        # self.info.text = str(Window.mouse_pos)
+        # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
+        # self.info.text += '\nfps:%d' % kivyClock.get_fps()
+        # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         self.score_label.text = "Score"
         self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
 
@@ -399,6 +398,7 @@ class LyricsPhrase(InstructionGroup):
         self.time = 0
         self.queue_cb = queue_cb
         self.added_lyric = False
+        self.on_screen = False
         # print "text to type: ",text_to_type
         # print "text: ",text
         self.label.set_colors((0,.87,1,1),text_to_type)
@@ -417,7 +417,7 @@ class LyricsPhrase(InstructionGroup):
         self.label.set_bold(letter_idx+1)
         new_text = self.label.texture
         self.rect.texture = new_text
-        self.add(self.rect)
+        # self.add(self.rect)
         self.current += 1
         try:
             self.next_avail=self.text[self.current]
@@ -433,18 +433,20 @@ class LyricsPhrase(InstructionGroup):
     def on_miss(self,letter_idx):
         red=(1,0,0,1)
         self.label.set_color(letter_idx,red)
-        self.add(self.rect)
+        # self.add(self.rect)
 
     def on_update(self,dt):
         self.time += dt
         epsilon = (self.start_time-self.time)
-        if epsilon < 0.0001:
+        if epsilon < 0.01:
             if not self.added_lyric:
                 self.add(self.rect)
                 self.added_lyric = True
             self.pos[1] += self.vel * dt
             self.rect.pos = self.pos
 
+        if self.pos[1] < Window.height - self.rect.size[1]/2.0:
+            self.on_screen = True
         if self.time > self.end_time:
             self.queue_cb()
         # if self.pos[1] < 0:
@@ -458,39 +460,6 @@ class LyricsPhrase(InstructionGroup):
 
     # cpos = property(get_cpos, set_cpos)
     # size = property(get_csize, set_csize)
-
-
-# display for a single gem at a position with a color (if desired)
-class GemDisplay(InstructionGroup):
-    def __init__(self, pos, color):
-        super(GemDisplay, self).__init__()
-
-    # change to display this gem being hit
-    def on_hit(self):
-        pass
-
-    # change to display a passed gem
-    def on_pass(self):
-        pass
-
-    # useful if gem is to animate
-    def on_update(self, dt):
-        pass
-
-
-# Displays one button on the nowbar
-class ButtonDisplay(InstructionGroup):
-    def __init__(self, pos, color):
-        super(ButtonDisplay, self).__init__()
-
-    # displays when button is down (and if it hit a gem)
-    def on_down(self, hit):
-        pass
-
-    # back to normal state
-    def on_up(self):
-        pass
-
 
 
 # Displays and controls all game elements: Nowbar, Buttons, BarLines, Gems.
@@ -587,26 +556,23 @@ class Player(object):
     def restart_game(self):
         self.display.restart()
         self.audio_ctrl.start()
-        self.gem_hits = 0
-        self.gem_misses = 0
+        self.word_hits = 0
         self.longest_streak = 0
 
 
     # called by MainWidget
     def on_button_down(self, char):
         curr_lyric = self.display.curr_lyric
-        print curr_lyric.next_avail
-        print curr_lyric.text
-        print curr_lyric.current
-        if curr_lyric.next_avail == char:
-            self.display.on_button_down(char,True)
-            self.display.curr_lyric.on_hit(curr_lyric.current)
-            print curr_lyric.next_avail,"next"
-            if char == " " or curr_lyric.end_of_lyric==True:
-                self.word_hits+=100
-                print self.word_hits, "SCORE"
-        else:
-           self.display.curr_lyric.on_miss(curr_lyric.current) 
+        if curr_lyric.on_screen:
+            if curr_lyric.next_avail == char:
+                self.display.on_button_down(char,True)
+                self.display.curr_lyric.on_hit(curr_lyric.current)
+                # print curr_lyric.next_avail,"next"
+                if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
+                    self.word_hits+=100
+                    # print self.word_hits, "SCORE"
+            else:
+               self.display.curr_lyric.on_miss(curr_lyric.current) 
 
 
         #self.display.on_button_down(char,False)
