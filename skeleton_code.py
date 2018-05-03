@@ -20,6 +20,7 @@ from kivy.core.text.text_layout import layout_text
 from kivy.core.text import Label as CoreLabel
 from kivy.core.text.markup import MarkupLabel
 from kivy.core.text import LabelBase
+from kivy.utils import platform
 
 import random
 import numpy as np
@@ -29,6 +30,7 @@ import matplotlib.colors as colors
 from colorsys import hsv_to_rgb
 from collections import deque, OrderedDict
 import re
+from customlabel import BasicLabel, CustomLabel
 
 
 
@@ -67,22 +69,22 @@ elif os.name == "mac" or os.name == "posix":
 
 
 
-try:
-    if os.name == "nt":
-        font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-        # SYSTEM_FONTS = fonts_to_dict(font_files)
-        # print SYSTEM_FONTS
-        # for font in SYSTEM_FONTS:
-        #     LabelBase.register(**font)
-    elif os.name == "mac" or os.name == "posix":
-        for font_path in font_paths:
-            font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-            SYSTEM_FONTS = fonts_to_dict(font_files)
-            print SYSTEM_FONTS
-            for font in SYSTEM_FONTS:
-                LabelBase.register(**font)
-except Exception as e:
-    print e
+# try:
+#     if os.name == "nt":
+#         font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+#         # SYSTEM_FONTS = fonts_to_dict(font_files)
+#         # print SYSTEM_FONTS
+#         # for font in SYSTEM_FONTS:
+#         #     LabelBase.register(**font)
+#     elif os.name == "mac" or os.name == "posix":
+#         for font_path in font_paths:
+#             font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+#             SYSTEM_FONTS = fonts_to_dict(font_files)
+#             print SYSTEM_FONTS
+#             for font in SYSTEM_FONTS:
+#                 LabelBase.register(**font)
+# except Exception as e:
+#     print e
 
 
     
@@ -93,16 +95,24 @@ except Exception as e:
 
 
 def score_label():
-    l = Label(text = "Score", valign='top', font_size='20sp',
-              pos=(Window.width*1.3, Window.height*0.4),
-              text_size=(Window.width, Window.height))
+    if platform == "macosx":        
+        font_name= "Comic Sans MS"
+    elif platform == "win":
+        font_name = "comic"
+    else:
+        font_name = ""
+    l = BasicLabel("Score",tpos=(Window.width*.75, Window.height*0.33),font_size=50,font_name=font_name)
     return l
 
 def end_label(text):
-    l = Label(text = text, valign = 'top', halign = 'center',font_size = '50sp',
-              pos = (Window.width*0.35,Window.height*0.25),
-              text_size = (Window.width,Window.height), color=(1,0,0,1))
+    if platform == "macosx":        
+        l = CustomLabel(text,font_size=50,invert_text=True,font_name="Comic Sans MS")
+    elif platform == "win":
+        l = CustomLabel(text,font_size=50,invert_text=True,font_name="comic")
+    else:
+        l = CustomLabel(text,font_size=50,invert_text=True)
     return l
+
 
 # Use matplotlib colors as follows:
 # colors.hex2color('#ffffff')        #==> (1.0, 1.0, 1.0)
@@ -154,29 +164,33 @@ class MainWidget(BaseWidget):
         self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
         self.gem_data.get_phrases()
         self.beat_disp = BeatMatchDisplay(self.gem_data)
+        self.info = topleft_label()
+        self.add_widget(self.info)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
         #     self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="bg_pic3.jpg")
         self.canvas.add(self.beat_disp)
-        # self.score_label = score_label()
-        # self.add_widget(self.score_label)
+        self.score_label = score_label()
+        self.canvas.add(self.score_label)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
+
         self.caps_on = False
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
         # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
         # test_text += "\n\nPress 'r' to restart the game"
-        # self.hello = CustomLabel(test_text,font_size=50,invert_text=True,font_name="DejaVuSans")
-        # self.hello.set_color(6,(0,1,0))
-        # # self.hello.set_bold(0)
-        # self.hello.set_color(6,(0,0,1))
-        # self.hello.set_bold(6)
-        # self.hello.set_italic(6)
-        # for i in range(5):
-        #     self.hello.set_color(i,(0,1,0))
-        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        # self.canvas.add(self.rect)
+        # self.hello = BasicLabel(test_text,pos=(50,50),font_size=50,invert_text=False,font_name="DejaVuSans")
+        # # self.hello.set_color(6,(0,1,0))
+        # # # self.hello.set_bold(0)
+        # # self.hello.set_color(6,(0,0,1))
+        # # self.hello.set_bold(6)
+        # # self.hello.set_italic(6)
+        # # for i in range(5):
+        # #     self.hello.set_color(i,(0,1,0))
+        # # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        # # self.canvas.add(self.rect)
+        # self.canvas.add(self.hello)
 
         
     def on_key_down(self, keycode, modifiers):
@@ -185,6 +199,9 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'capslock':
             self.caps_on = not self.caps_on
 
+        if keycode[1] == 'tab':
+            print "HIT TAB"
+            self.hello.text += "\nHello World Again!"
         # play / pause toggle
         if keycode[1] == 'enter':
             if "shift" in modifiers:
@@ -225,6 +242,15 @@ class MainWidget(BaseWidget):
 
     def on_update(self) :
         self.player.on_update()
+        self.info.text = 'load:%.2f\n' % self.audio_cont.audio.get_cpu_load()
+        self.info.text += '\nfps:%d' % kivyClock.get_fps()
+        self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        # self.end_label=end_label(str(self.player.word_hits))
+        # self.r.texture=self.end_label.texture
+        # self.r.size=self.end_label.texture.size
+        # self.canvas.add(self.r)
+        self.score_label.text = "Score"
+        self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
 
 
 # creates the Audio driver
@@ -324,8 +350,8 @@ class SongData(object):
                 if not start_time:
                   start_time = float(start_sec)
             else:
-                print "phrase end: ", phrase
-                print "end text: ", text
+                # print "phrase end: ", phrase
+                # print "end text: ", text
                 split_txt = phrase.strip().split(' ')
                 if text[:-1] != split_txt[-1] :
                     phrase += text[:-1]
@@ -348,218 +374,18 @@ class SongData(object):
     def get_phrases_in_order(self):
         return self.phrases
 
-
-    # TODO: figure out how gem and barline data should be accessed...
-
-class CustomLabel(object):
-    """
-    Class to encapsulate CoreLabel() and MarkupLabel() for more text editing
-    flexibility
-
-    Creates labels for interactivity
-
-    Parameters
-    ----------
-    text: str
-        String representing text you want the texture for
-    font_size: int
-        Number representing pixel size of text
-        Default: 20
-    color: tuple(r,g,b,a)
-        tuple containing rgba values mapped on scale from 0 to 1
-        Default: (1,1,1,1)
-    invert_text: bool
-        Flag to signify if multi-line text should be displayed from top to bottom or vice versa.
-        Original index order of text is preserved
-        Default: False (i.e top to bottom) 
-    **kwargs: args
-        Additional arguments need for more fine control of label placement
-        See https://kivy.org/docs/api-kivy.core.text.html
-    """
-    def __init__(self,text,font_size=20,color=(1,1,1,1),invert_text=False,**kwargs):
-        super(CustomLabel, self).__init__()
-        if len(color) == 3:
-            color = [c for c in color]+[1]
-        self.invert_text = invert_text
-        self.text_dict = {i:text[i] for i in range(len(text))}
-        self.text = self.parse_text(text,invert_text)
-        self.label = MarkupLabel(text=self.text,font_size=font_size,color=color,**kwargs)
-        self.markup_regex = re.compile("(\[.+\])")
-        self.def_regex = re.compile("(\[/*(color(=#\w+)*|b|i)\])")
-        
-        self.label.refresh()
-
-    def parse_text(self,text,invert):
-        fin_txt = ""
-        if invert:
-            split_txt = text.strip().split("\n")
-            split_txt = split_txt[::-1]
-            stitched = "\n".join(split_txt)
-            return stitched
-        else:
-            return text
-        
-
-
-
-    def set_color(self,idx,color):
-        """
-        Function to change the color of an individual character in the label
-
-        Parameters
-        ----------
-        idx: int
-            Number representing index in string of the char to manipulate
-        color: tuple(r,g,b,a)
-            tuple containing rgba values mapped on scale from 0 to 1
-        """
-        try:
-            hexcolor = colors.to_hex(color,keep_alpha=True)
-            old_text = self.text_dict[idx]
-            color_regex = re.compile("(\[color=#\w+\])")
-            match = color_regex.search(old_text)
-            if match:
-                new_text = re.sub('#\w+',hexcolor,old_text)
-            else:
-                markups = self.markup_regex.split(old_text)
-                new_text = ["[color=%s]" % hexcolor] + markups+ ["[/color]"]
-                new_text = "".join(new_text)
-            self.text_dict[idx] = new_text
-            render_text = self.join_text()
-            self.label.text = render_text
-            self.label.refresh()
-        except Exception as e:
-            print e
-
-    def set_colors(self,color,substr="",start=None,end=None):
-
-        if substr:
-            start = self.text.find(substr)
-            if start != -1:
-                end = start + len(substr)
-                for idx in range(start,end):
-                    self.set_color(idx,color)
-        else:
-            if start and end:
-                for idx in range(start,end):
-                    self.set_color(idx,color)
-            elif start:
-                for idx in range(start,len(self.text)):
-                    self.set_color(idx,color)
-
-
-    def set_bold(self,idx):
-        """
-        Function to bold an individual character in the label
-
-        Parameters
-        ----------
-        idx: int
-            Number representing index in string of the char to manipulate
-        """
-        try:
-            old_text = self.text_dict[idx]
-            bold_regex = re.compile("\[/*b\]")
-            match = bold_regex.search(old_text)
-            if match:
-                new_text = bold_regex.sub("",old_text)
-            else:
-                markups = self.markup_regex.split(old_text)
-                new_text = ["[b]"] + markups+ ["[/b]"]
-                new_text = "".join(new_text)
-            self.text_dict[idx] = new_text
-            render_text = self.join_text()
-            self.label.text = render_text
-            self.label.refresh()
-        except Exception as e:
-            print e
-
-
-    def set_italic(self,idx):
-        """
-        Function to italicize an individual character in the label
-
-        Parameters
-        ----------
-        idx: int
-            Number representing index in string of the char to manipulate
-        """
-        try:
-            old_text = self.text_dict[idx]
-            italic_regex = re.compile("\[/*i\]")
-            match = italic_regex.search(old_text)
-            if match:
-                new_text = italic_regex.sub("",old_text)
-            else:
-                markups = self.markup_regex.split(old_text)
-                new_text = ["[i]"] + markups+ ["[/i]"]
-                new_text = "".join(new_text)
-            self.text_dict[idx] = new_text
-            render_text = self.join_text()
-            self.label.text = render_text
-            self.label.refresh()
-        except Exception as e:
-            print e
-
-    def clear_markups(self,idx):
-        """
-        Function to clear all markups currently affecting a character at idx
-
-        Parameters
-        ----------
-        idx: int
-            Number representing index in string of the char to manipulate
-        """
-        old_text = self.text_dict[idx]
-        match = self.def_regex.match(old_text)
-        if match:
-            new_text = self.def_regex.sub("",old_text)
-            self.text_dict[idx] = new_text
-            render_text = self.join_text()
-            self.label.text = render_text
-            self.label.refresh()
-
-    def clear_all_markups(self):
-        """
-        Clears all user added markups to the text
-        """
-        map(self.clear_markups,self.text_dict)
-
-    
-    def join_text(self):
-        """
-        Function to join the values of the text_dict into a single string for rendering
-        """
-        if not self.invert_text:
-            text = "".join(self.text_dict.values())
-            return text
-        else:
-            text = "".join(self.text_dict.values())
-            split_txt = text.strip().split("\n")
-            split_txt = split_txt[::-1]
-            stitched = "\n".join(split_txt)
-            return stitched
-
-    @property
-    def texture(self):
-        return self.label.texture
-
-    
-
-
-
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.text_to_type=text_to_type
-
+        self.end_of_lyric=False
 
         self.pos = np.array(pos, dtype=np.float)
-        if os.name == "nt":
+        if platform == "win":
             self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
-        elif os.name == "mac" or os.name == "posix":
-            self.label = CustomLabel(text,color=color, font_size=40,font_name="Georgia")
+        elif platform == "macosx":
+            self.label = CustomLabel(text,color=color, font_size=40,font_name="Microsoft Sans Serif")
         else:
             self.label = CustomLabel(text,color=color, font_size=40)
         self.current=self.text.find(text_to_type)
@@ -594,7 +420,9 @@ class LyricsPhrase(InstructionGroup):
         self.current += 1
         try:
             self.next_avail=self.text[self.current]
+            self.end_of_lyric=False
         except Exception as e:
+            self.end_of_lyric=True
             print e
             print "END OF LYRIC"
 
@@ -612,6 +440,7 @@ class LyricsPhrase(InstructionGroup):
         if epsilon < 0.0001:
             if not self.added_lyric:
                 self.add(self.rect)
+                self.added_lyric = True
             self.pos[1] += self.vel * dt
             self.rect.pos = self.pos
 
@@ -737,7 +566,7 @@ class Player(object):
         self.audio_ctrl = audio_ctrl
         self.display = display
         self.gem_data = gem_data
-        self.gem_hits = 0
+        self.word_hits = 0
         self.gem_misses = 0
         self.longest_streak = 0
 
@@ -771,6 +600,10 @@ class Player(object):
         if curr_lyric.next_avail == char:
             self.display.on_button_down(char,True)
             self.display.curr_lyric.on_hit(curr_lyric.current)
+            print curr_lyric.next_avail,"next"
+            if char == " " or curr_lyric.end_of_lyric==True:
+                self.word_hits+=100
+                print self.word_hits, "SCORE"
         else:
            self.display.curr_lyric.on_miss(curr_lyric.current) 
 
