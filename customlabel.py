@@ -61,7 +61,6 @@ class CustomLabel(object):
         return self.label_text
 
     def set_text(self,txt):
-        print "SETTING NEW TEXT"
         self.text_dict = {i:txt[i] for i in range(len(txt))}
         
         fin_txt = ""
@@ -234,16 +233,15 @@ class CustomLabel(object):
         return self.label.texture
 
 class BasicLabel(InstructionGroup):
-    def __init__(self,text,**kwargs):
+    def __init__(self,text,tpos,**kwargs):
         super(BasicLabel, self).__init__()
         self.label = CustomLabel(text,**kwargs)
-        if kwargs.has_key('tpos'):
-            self.tpos = kwargs['tpos']
-        elif kwargs.has_key('pos'):
-            self.pos = kwargs['pos']
-            self.pos = np.array(self.pos, dtype=np.float)
+        self.max_size = self.label.texture.size
+        self.og_pos = tpos
+        self.tpos = tpos
         self.label_text = text
         self.rect = Rectangle(size=self.label.texture.size,pos=self.pos,texture=self.label.texture)
+
         self.add(self.rect)
 
     def get_text(self):
@@ -253,6 +251,8 @@ class BasicLabel(InstructionGroup):
         self.label.text = txt
         self.rect.size = self.label.texture.size
         self.rect.texture = self.label.texture
+        self.tpos = self.og_pos
+        self.rect.pos = self.pos
         self.label_text = txt
 
     def get_tpos(self):
@@ -263,7 +263,8 @@ class BasicLabel(InstructionGroup):
 
     @property
     def size(self):
-        return self.label.texture.size
+        return max(self.label.texture.size,self.max_size)
+
     text = property(get_text,set_text)
     tpos = property(get_tpos, set_tpos)
 

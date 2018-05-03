@@ -101,7 +101,11 @@ def score_label():
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("Score",tpos=(Window.width*.75, Window.height*0.33),font_size=50,font_name=font_name)
+    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=50,font_name=font_name)
+    return l
+
+def system_info_label():
+    l = BasicLabel("",tpos=(20, 590),font_size=25)
     return l
 
 def end_label(text):
@@ -164,8 +168,8 @@ class MainWidget(BaseWidget):
         self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
         self.gem_data.get_phrases()
         self.beat_disp = BeatMatchDisplay(self.gem_data)
-        self.info = topleft_label()
-        self.add_widget(self.info)
+        self.info = system_info_label()
+        self.canvas.add(self.info)
         # with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
         #     self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="bg_pic3.jpg")
@@ -242,13 +246,10 @@ class MainWidget(BaseWidget):
 
     def on_update(self) :
         self.player.on_update()
-        self.info.text = 'load:%.2f\n' % self.audio_cont.audio.get_cpu_load()
+        self.info.text = str(Window.mouse_pos)
+        self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         self.info.text += '\nfps:%d' % kivyClock.get_fps()
         self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
-        # self.end_label=end_label(str(self.player.word_hits))
-        # self.r.texture=self.end_label.texture
-        # self.r.size=self.end_label.texture.size
-        # self.canvas.add(self.r)
         self.score_label.text = "Score"
         self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
 
