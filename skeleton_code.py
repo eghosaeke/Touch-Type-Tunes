@@ -105,7 +105,7 @@ def score_label():
     return l
 
 def system_info_label():
-    l = BasicLabel("",tpos=(20, 590),font_size=25)
+    l = BasicLabel(" ",tpos=(20, 590),font_size=25)
     return l
 
 def end_label(text):
@@ -170,9 +170,12 @@ class MainWidget(BaseWidget):
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         self.info = system_info_label()
         self.canvas.add(self.info)
-        # with self.canvas.before:
+        with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
-        #     self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="bg_pic3.jpg")
+            self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="mic-booth.jpg")
+            Color(0, 0, 0, 0.3)
+            self.sidebar = Rectangle(size = (Window.width/2,Window.height),pos =(0,0))
+        self.canvas.add(Color(1,1,1))
         self.canvas.add(self.beat_disp)
         self.score_label = score_label()
         self.canvas.add(self.score_label)
@@ -214,7 +217,7 @@ class MainWidget(BaseWidget):
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            self.player.on_button_down(" ")
+            self.player.on_button_down("_")
             # print "down ", "spacebar"
 
             
@@ -343,20 +346,20 @@ class SongData(object):
             (start_sec, text) = word.strip().split('\t')
             if "." not in text:
                 if '*' in text:
-                    phrase+= text[:-1]+" "
-                    phrase_to_type += text[:-1]+" "
+                    phrase+= text[:-1]+"_"
+                    phrase_to_type += text[:-1]+"_"
                 else:
-                    phrase += text + " "
+                    phrase += text + "_"
                 if not start_time:
                   start_time = float(start_sec)
             else:
                 # print "phrase end: ", phrase
                 # print "end text: ", text
-                split_txt = phrase.strip().split(' ')
+                split_txt = phrase.strip().split('_')
                 if text[:-1] != split_txt[-1] :
-                    phrase += text[:-1]
-                phrase = phrase.rstrip(" ")
-                phrase_to_type = phrase_to_type.rstrip(" ")
+                    phrase += split_txt[-1][:-1]
+                phrase = phrase.rstrip("_")
+                phrase_to_type = phrase_to_type.rstrip("_")
                 
                 if not end_time:
                     end_time = float(start_sec)
@@ -399,9 +402,10 @@ class LyricsPhrase(InstructionGroup):
         self.queue_cb = queue_cb
         self.added_lyric = False
         self.on_screen = False
-        # print "text to type: ",text_to_type
-        # print "text: ",text
+        print "text to type: ",text_to_type
+        print "text: ",text
         self.label.set_colors((0,.87,1,1),text_to_type)
+        self.label.set_colors((0,0,0,0),"_")
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
