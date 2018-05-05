@@ -1,21 +1,15 @@
+#####################################################################
+#
+# customlabel.py
+#
+# written by: Eghosa Eke
+#
+#####################################################################
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
-from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
-from kivy.clock import Clock as kivyClock
-from kivy.core.text import Label
-from kivy.core.text.text_layout import layout_text
-from kivy.core.text import Label as CoreLabel
 from kivy.core.text.markup import MarkupLabel
-from kivy.core.text import LabelBase
-from kivy.utils import platform
-
-import random
-import numpy as np
-import bisect
-import string
-import matplotlib.colors as colors
-from colorsys import hsv_to_rgb
-from collections import deque, OrderedDict
+from kivy.utils import get_hex_from_color as to_hex
+from kivy.core.window import Window
 import re
 
 class CustomLabel(object):
@@ -49,7 +43,6 @@ class CustomLabel(object):
             color = [c for c in color]+[1]
         self.invert_text = invert_text
         self.text_dict = {i:text[i] for i in range(len(text))}
-        
         self.label_text = self.parse_text(text,invert_text)
         self.label = MarkupLabel(text=self.label_text,font_size=font_size,color=color,**kwargs)
         self.markup_regex = re.compile("(\[.+\])")
@@ -57,24 +50,20 @@ class CustomLabel(object):
         
         self.label.refresh()
 
+    # Get the current text of the label
     def get_text(self):
         return self.label_text
 
+
+    # setter method for text of the label. Allows for dynamic changes to the label
     def set_text(self,txt):
         self.text_dict = {i:txt[i] for i in range(len(txt))}
-        
-        fin_txt = ""
-        if self.invert_text:
-            split_txt = txt.strip().split("\n")
-            split_txt = split_txt[::-1]
-            stitched = "\n".join(split_txt)
-            fin_txt = stitched
-        else:
-            fin_txt = txt
+        fin_txt = self.parse_text(txt,self.invert_text)
         self.label_text = fin_txt
         self.label.text = self.label_text
         self.label.refresh()
 
+    # Parse text into vertically inverted or non-inverted format for interfacing
     def parse_text(self,text,invert):
         fin_txt = ""
         if invert:
@@ -84,9 +73,6 @@ class CustomLabel(object):
             return stitched
         else:
             return text
-        
-
-
 
     def set_color(self,idx,color):
         """
@@ -100,7 +86,7 @@ class CustomLabel(object):
             tuple containing rgba values mapped on scale from 0 to 1
         """
         try:
-            hexcolor = colors.to_hex(color,keep_alpha=True)
+            hexcolor = to_hex(color)
             old_text = self.text_dict[idx]
             color_regex = re.compile("(\[color=#\w+\])")
             match = color_regex.search(old_text)
@@ -117,8 +103,25 @@ class CustomLabel(object):
         except Exception as e:
             print e
 
-    def set_colors(self,color,substr="",start=None,end=None):
 
+    def set_colors(self,color,substr="",start=None,end=None):
+        """
+        Function to set the color of multiple characters matching a specific substring
+        or from a start to end index
+
+        Parameters:
+        -----------
+        color: tuple(r,g,b,a)
+            tuple containing rgba values mapped on scale from 0 to 1
+        substr: string
+            String representing substring of text to color
+            Default: ""
+        start: int
+            Number representing start index to set color for
+            Default: None
+        end: int
+            Number representing end index for setting             Default: None
+        """
         if substr:
             start = self.text.find(substr)
             if start != -1:
@@ -233,20 +236,36 @@ class CustomLabel(object):
         return self.label.texture
 
 class BasicLabel(InstructionGroup):
+    """
+    Class to provide simple Label functionalilty
+
+    Parameters
+    ----------
+    text: str
+        String representing text you want the texture for
+    tpos: tuple(float,float)
+        Tuple representing x,y coordinates of the topleft corner of label in pixel-space
+    **kwargs: args
+        Additional arguments need for more fine control of label placement
+        See CustomLabel for additional details
+        See https://kivy.org/docs/api-kivy.core.text.html
+    """
     def __init__(self,text,tpos,**kwargs):
         super(BasicLabel, self).__init__()
-        self.label = CustomLabel(text,**kwargs)
-        self.max_size = self.label.texture.size
         self.og_pos = tpos
+        text_size = (Window.width-tpos[0],tpos[1])
+        self.label = CustomLabel(text, text_size=text_size,**kwargs)
+        self.rect = Rectangle(size=self.label.texture.size,pos=self.og_pos,texture=self.label.texture)
+        self.max_size = self.label.texture.size
         self.tpos = tpos
         self.label_text = text
-        self.rect = Rectangle(size=self.label.texture.size,pos=self.pos,texture=self.label.texture)
-
         self.add(self.rect)
 
+    # Get the text associated with this label
     def get_text(self):
         return self.label_text
 
+    # setter method for text of the label. Allows for dynamic changes to the label
     def set_text(self,txt):
         self.label.text = txt
         self.rect.size = self.label.texture.size
@@ -255,11 +274,16 @@ class BasicLabel(InstructionGroup):
         self.rect.pos = self.pos
         self.label_text = txt
 
+    # Get the current topleft corner pos of label
     def get_tpos(self):
         return (self.pos[0], self.pos[1] + self.size[1])
 
+    # setter method for tpos of label. Allows for dynamic changes to the label
     def set_tpos(self, p):
         self.pos = (p[0], p[1] - self.size[1])
+        if p != self.pos:
+            self.rect.pos = self.pos
+            self.og_pos = p
 
     @property
     def size(self):

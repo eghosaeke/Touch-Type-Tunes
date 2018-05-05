@@ -39,61 +39,6 @@ if os.name == "nt":
 elif os.name == "mac" or os.name == "posix":
     font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
-# def fonts_to_dict(filenames):
-#     print filenames
-#     curr_name_reg = re.compile(filenames[0].split(".")[0])
-#     all_fonts = []
-#     curr_font_reg = {}
-#     for filename in filenames:
-#         name = filename.split(".")[0]
-#         match = curr_name_reg.search(name)
-#         if match:
-#             split = curr_name_reg.split(name)
-#             if split[1] == '':
-#                 curr_font_reg["name"] = name.lower()
-#                 curr_font_reg["fn_regular"] = os.path.join(font_path,filename)
-#             elif split[1] == 'bi':
-#                 curr_font_reg["fn_bolditalic"] = os.path.join(font_path,filename)
-#             elif split[1] == 'i':
-#                 curr_font_reg["fn_italic"] = os.path.join(font_path,filename)
-#             elif split[1] == 'b' or split[1] == 'bd':
-#                 curr_font_reg["fn_bold"] = os.path.join(font_path,filename)
-#         else:
-#             all_fonts.append(curr_font_reg)
-#             curr_name_reg = re.compile(name)
-#             curr_font_reg = {"name":name.lower(),
-#                             "fn_regular":os.path.join(font_path,filename)}
-
-
-#     return all_fonts
-
-
-
-# try:
-#     if os.name == "nt":
-#         font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-#         # SYSTEM_FONTS = fonts_to_dict(font_files)
-#         # print SYSTEM_FONTS
-#         # for font in SYSTEM_FONTS:
-#         #     LabelBase.register(**font)
-#     elif os.name == "mac" or os.name == "posix":
-#         for font_path in font_paths:
-#             font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
-#             SYSTEM_FONTS = fonts_to_dict(font_files)
-#             print SYSTEM_FONTS
-#             for font in SYSTEM_FONTS:
-#                 LabelBase.register(**font)
-# except Exception as e:
-#     print e
-
-
-    
-
-    
-
-
-
-
 def score_label():
     if platform == "macosx":        
         font_name= "Comic Sans MS"
@@ -105,7 +50,7 @@ def score_label():
     return l
 
 def system_info_label():
-    l = BasicLabel(" ",tpos=(20, 590),font_size=25)
+    l = BasicLabel("",tpos=(20, 590),font_size=25)
     return l
 
 def end_label(text):
@@ -168,8 +113,6 @@ class MainWidget(BaseWidget):
         self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
         self.gem_data.get_phrases()
         self.beat_disp = BeatMatchDisplay(self.gem_data)
-        self.info = system_info_label()
-        self.canvas.add(self.info)
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
             self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="mic-booth.jpg")
@@ -179,25 +122,27 @@ class MainWidget(BaseWidget):
         self.canvas.add(self.beat_disp)
         self.score_label = score_label()
         self.canvas.add(self.score_label)
+        self.info = system_info_label()
+        self.canvas.add(self.info)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
 
         self.caps_on = False
-        # test_text = "HELLO WOLRD"
-        # test_text += "\nFinal Score: "+"{:,}".format(65464163)
-        # test_text += "\nLongest Streak: "+"{:,}".format(5264)
-        # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
-        # test_text += "\n\nPress 'r' to restart the game"
-        # self.hello = BasicLabel(test_text,pos=(50,50),font_size=50,invert_text=False,font_name="DejaVuSans")
-        # # self.hello.set_color(6,(0,1,0))
-        # # # self.hello.set_bold(0)
-        # # self.hello.set_color(6,(0,0,1))
-        # # self.hello.set_bold(6)
-        # # self.hello.set_italic(6)
-        # # for i in range(5):
-        # #     self.hello.set_color(i,(0,1,0))
-        # # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        # # self.canvas.add(self.rect)
-        # self.canvas.add(self.hello)
+        test_text = "HELLO WOLRD"
+        test_text += "\nFinal Score: "+"{:,}".format(65464163)
+        test_text += "\nLongest Streak: "+"{:,}".format(5264)
+        test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
+        test_text += "\n\nPress 'r' to restart the game"
+        self.hello = BasicLabel(test_text,tpos=(0,600),font_size=50,invert_text=False,font_name="DejaVuSans")
+        # self.hello.set_color(6,(0,1,0))
+        # # self.hello.set_bold(0)
+        # self.hello.set_color(6,(0,0,1))
+        # self.hello.set_bold(6)
+        # self.hello.set_italic(6)
+        # for i in range(5):
+        #     self.hello.set_color(i,(0,1,0))
+        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        # self.canvas.add(self.rect)
+        self.canvas.add(self.hello)
 
         
     def on_key_down(self, keycode, modifiers):
@@ -207,7 +152,10 @@ class MainWidget(BaseWidget):
             self.caps_on = not self.caps_on
 
         if keycode[1] == 'tab':
-            self.hello.text += "\nHello World Again!"
+            # self.hello.text += "\nHello World Again!"
+            print "prev tpos: ", self.info.tpos
+            self.info.tpos = (self.info.tpos[0],self.info.tpos[1]-20)
+            print "new tpos: ", self.info.tpos
         # play / pause toggle
         if keycode[1] == 'enter':
             if "shift" in modifiers:
@@ -218,6 +166,7 @@ class MainWidget(BaseWidget):
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
             self.player.on_button_down("_")
+            self.hello.text += " "
             # print "down ", "spacebar"
 
             
@@ -228,6 +177,7 @@ class MainWidget(BaseWidget):
             if self.caps_on or 'shift' in modifiers:
                 letter = letter.upper()
             self.player.on_button_down(letter)
+            self.hello.text += letter
 
             # print "down ", letter , keycode[1]
 
@@ -235,6 +185,7 @@ class MainWidget(BaseWidget):
         if spec_char != None:
             self.player.on_button_down(spec_char)
             print "down ", spec_char
+            self.hello.text += spec_char
 
     def on_key_up(self, keycode):
         # button up
@@ -247,11 +198,12 @@ class MainWidget(BaseWidget):
             self.player.on_button_up(spec_char)
 
     def on_update(self) :
-        self.player.on_update()
-        # self.info.text = str(Window.mouse_pos)
-        # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
-        # self.info.text += '\nfps:%d' % kivyClock.get_fps()
-        # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        if kivyClock.get_fps() > 40:
+            self.player.on_update()
+        self.info.text = str(Window.mouse_pos)
+        self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
+        self.info.text += '\nfps:%d' % kivyClock.get_fps()
+        self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         self.score_label.text = "Score"
         self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
 
@@ -385,6 +337,7 @@ class LyricsPhrase(InstructionGroup):
         self.end_of_lyric=False
 
         self.pos = np.array(pos, dtype=np.float)
+        # text_size = (Window.width-pos[0],None)
         if platform == "win":
             self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
         elif platform == "macosx":
@@ -517,6 +470,7 @@ class BeatMatchDisplay(InstructionGroup):
     # called by Player. Causes the right thing to happen
     def on_button_up(self, char):
         pass
+
     def pop_lyric(self):
         self.lyrics_deque.popleft()
         if len(self.lyrics_deque) != 0:
@@ -566,24 +520,26 @@ class Player(object):
 
     # called by MainWidget
     def on_button_down(self, char):
-        curr_lyric = self.display.curr_lyric
-        if curr_lyric.on_screen:
-            if curr_lyric.next_avail == char:
-                self.display.on_button_down(char,True)
-                self.display.curr_lyric.on_hit(curr_lyric.current)
-                # print curr_lyric.next_avail,"next"
-                if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
-                    self.word_hits+=100
-                    # print self.word_hits, "SCORE"
-            else:
-               self.display.curr_lyric.on_miss(curr_lyric.current) 
+        if not self.game_paused:
+            curr_lyric = self.display.curr_lyric
+            if curr_lyric.on_screen:
+                if curr_lyric.next_avail == char:
+                    self.display.on_button_down(char,True)
+                    self.display.curr_lyric.on_hit(curr_lyric.current)
+                    # print curr_lyric.next_avail,"next"
+                    if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
+                        self.word_hits+=100
+                        # print self.word_hits, "SCORE"
+                else:
+                   self.display.curr_lyric.on_miss(curr_lyric.current) 
 
 
         #self.display.on_button_down(char,False)
 
     # called by MainWidget
     def on_button_up(self, char):
-        self.display.on_button_up(char)
+        if not self.game_paused:
+            self.display.on_button_up(char)
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
