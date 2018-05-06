@@ -264,6 +264,10 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         self.score_label.text = "Score"
         self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
+        
+
+        #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
+        self.improv = self.player.improv
 
 
 # creates the Audio driver
@@ -356,11 +360,22 @@ class SongData(object):
         phrase_to_type=""
         start_time = None
         end_time = None
+        
         for word in words:
             # print "phrase: ",phrase
             # print "Start: ", start_time
             # print "End: ", end_time
             (start_sec, text) = word.strip().split('\t')
+            
+            #TODO: (maybe?) possible Designs:
+            #1) Tag the improv section with a timestamp at the beginning/end (and return the times)
+            #2) trigger the improv section when the word improv is dequed (find )
+            
+            #Don't put the improv words on display
+            if '\\' in word:
+                #TODO: 
+                continue
+            
             if "." not in text:
                 if '*' in text:
                     phrase+= text[:-1]+"_"
@@ -593,6 +608,7 @@ class Player(object):
         self.word_hits = 0
         self.gem_misses = 0
         self.longest_streak = 0
+        
 
 
     # called by MainWidget to play/pause game
