@@ -116,11 +116,16 @@ class MainWidget(BaseWidget):
         #Improv stuff
         self.loopFilepath = 'Stems/improv/Fetish-improv-loops.txt'
         self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
+        self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
         
         #Loop = (Lyric, startTime, duration)
         #Mark  = Lyric: (startTime, endTime)
         self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
-        self.buffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav')
+        self.bgImprovBuffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav') 
+        self.vocalImprovBuffers = make_wave_buffers(self.markRegionPath, self.song + '_vocals.wav')
+        self.marksHit = []
+        
+        self.improv = False
 
         
         self.beat_disp = BeatMatchDisplay(self.gem_data)
@@ -179,7 +184,11 @@ class MainWidget(BaseWidget):
             self.player.on_button_down("_")
             self.hello.text += " "
             # print "down ", "spacebar"
-
+        
+        
+        #Use forward slash to end improv mode
+        if keycode[1] == '\\':
+            self.improv = False
             
 
         # button down
@@ -191,32 +200,34 @@ class MainWidget(BaseWidget):
             self.hello.text += letter
 
             # print "down ", letter , keycode[1]
-
-        spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
-        if spec_char != None:
-            self.player.on_button_down(spec_char)
-            print "down ", spec_char
-            self.hello.text += spec_char
-            
-            
-        #Dev Tools for Improv:
-            
-        bufferKeys = ['Loop1', 'Loop2', 'LoopF', 'Final']
-        if keycode[1] == 'j':
-            self.loop1 = WaveGenerator(self.buffers[bufferKeys[0]], True)
-            self.audio_cont.mixer.add(self.loop1)
         
-        if keycode[1] == 'k':
-            self.loop2 = WaveGenerator(self.buffers[bufferKeys[1]], True)
-            self.audio_cont.mixer.add(self.loop2)
+        #Disable punctuation in improv mode:
+        if not self.improv:
+            spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
+            if spec_char != None:
+                self.player.on_button_down(spec_char)
+                print "down ", spec_char
+                self.hello.text += spec_char
+                
             
-        if keycode[1] == 'l':
-            self.loopF = WaveGenerator(self.buffers[bufferKeys[2]], True)
-            self.audio_cont.mixer.add(self.loopF)
-        
-        if keycode[1] == ';':
-            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
-            self.audio_cont.mixer.add(self.final)
+#        #Dev Tools for Improv:
+#        #Testing buffer playback
+#        bufferKeys = ['Loop1', 'Loop2', 'LoopF', 'Final']
+#        if keycode[1] == 'j':
+#            self.loop1 = WaveGenerator(self.buffers[bufferKeys[0]], True)
+#            self.audio_cont.mixer.add(self.loop1)
+#        
+#        if keycode[1] == 'k':
+#            self.loop2 = WaveGenerator(self.buffers[bufferKeys[1]], True)
+#            self.audio_cont.mixer.add(self.loop2)
+#            
+#        if keycode[1] == 'l':
+#            self.loopF = WaveGenerator(self.buffers[bufferKeys[2]], True)
+#            self.audio_cont.mixer.add(self.loopF)
+#        
+#        if keycode[1] == ';':
+#            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
+#            self.audio_cont.mixer.add(self.final)
             
         
 
@@ -231,18 +242,19 @@ class MainWidget(BaseWidget):
             self.player.on_button_up(spec_char)
             
             
-        #Dev Tools for Improv
-        if keycode[1] == 'j':
-            self.audio_cont.mixer.remove(self.loop1)
-            
-        if keycode[1] == 'k':
-            self.audio_cont.mixer.remove(self.loop2)
-            
-        if keycode[1] == 'l':
-            self.audio_cont.mixer.remove(self.loopF)
-            
-        if keycode[1] == ';':
-            self.audio_cont.mixer.remove(self.final)
+#        #Dev Tools for Improv
+#        #Testing buffer placback
+#        if keycode[1] == 'j':
+#            self.audio_cont.mixer.remove(self.loop1)
+#            
+#        if keycode[1] == 'k':
+#            self.audio_cont.mixer.remove(self.loop2)
+#            
+#        if keycode[1] == 'l':
+#            self.audio_cont.mixer.remove(self.loopF)
+#            
+#        if keycode[1] == ';':
+#            self.audio_cont.mixer.remove(self.final)
             
 
     def on_update(self) :
@@ -383,7 +395,8 @@ class SongData(object):
 
     def get_phrases_in_order(self):
         return self.phrases
-        
+    
+    #Collects a list of background loop times and a dictionary of marked words (with times)
     def read_improv(self, loop_filepath, mark_filepath):
         
         loopFile = open(loop_filepath)
