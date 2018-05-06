@@ -117,15 +117,18 @@ class MainWidget(BaseWidget):
         self.loopFilepath = 'Stems/improv/Fetish-improv-loops.txt'
         self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
         self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
-        
+
+   
         #Loop = (Lyric, startTime, duration)
         #Mark  = Lyric: (startTime, endTime)
         self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
+
         self.bgImprovBuffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav') 
         self.vocalImprovBuffers = make_wave_buffers(self.markRegionPath, self.song + '_vocals.wav')
         self.marksHit = []
         
         self.improv = False
+        self.buffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav')
 
         
         self.beat_disp = BeatMatchDisplay(self.gem_data)
@@ -228,8 +231,8 @@ class MainWidget(BaseWidget):
 #        if keycode[1] == ';':
 #            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
 #            self.audio_cont.mixer.add(self.final)
-            
-
+        
+        
     def on_key_up(self, keycode):
         # button up
         letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
@@ -254,7 +257,6 @@ class MainWidget(BaseWidget):
 #            
 #        if keycode[1] == ';':
 #            self.audio_cont.mixer.remove(self.final)
-            
 
     def on_update(self) :
         if kivyClock.get_fps() > 40:
@@ -411,6 +413,7 @@ class SongData(object):
         return self.phrases
     
     #Collects a list of background loop times and a dictionary of marked words (with times)
+        
     def read_improv(self, loop_filepath, mark_filepath):
         
         loopFile = open(loop_filepath)
