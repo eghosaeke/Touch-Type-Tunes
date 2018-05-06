@@ -118,7 +118,7 @@ class MainWidget(BaseWidget):
         self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
         self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
 
-   
+        
         #Loop = (Lyric, startTime, duration)
         #Mark  = Lyric: (startTime, endTime)
         self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
@@ -203,7 +203,8 @@ class MainWidget(BaseWidget):
             # self.hello.text += letter
 
             # print "down ", letter , keycode[1]
-        
+
+
         #Disable punctuation in improv mode:
         if not self.improv:
             spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
@@ -231,8 +232,7 @@ class MainWidget(BaseWidget):
 #        if keycode[1] == ';':
 #            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
 #            self.audio_cont.mixer.add(self.final)
-        
-        
+      
     def on_key_up(self, keycode):
         # button up
         letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
@@ -413,7 +413,7 @@ class SongData(object):
         return self.phrases
     
     #Collects a list of background loop times and a dictionary of marked words (with times)
-        
+
     def read_improv(self, loop_filepath, mark_filepath):
         
         loopFile = open(loop_filepath)
