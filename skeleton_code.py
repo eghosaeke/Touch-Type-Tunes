@@ -112,6 +112,17 @@ class MainWidget(BaseWidget):
         self.gem_data = SongData()
         self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
         self.gem_data.get_phrases()
+        
+        #Improv stuff
+        self.loopFilepath = 'Stems/improv/Fetish-improv-loops.txt'
+        self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
+        
+        #Loop = (Lyric, startTime, duration)
+        #Mark  = Lyric: (startTime, endTime)
+        self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
+        self.buffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav')
+
+        
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
@@ -180,7 +191,6 @@ class MainWidget(BaseWidget):
             # self.hello.text += letter
 
             # print "down ", letter , keycode[1]
-
         
         #Disable punctuation in improv mode:
         if not self.improv:
@@ -210,7 +220,6 @@ class MainWidget(BaseWidget):
 #            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
 #            self.audio_cont.mixer.add(self.final)
             
-
     def on_key_up(self, keycode):
         # button up
         letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
@@ -220,6 +229,21 @@ class MainWidget(BaseWidget):
         spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
         if spec_char != None:
             self.player.on_button_up(spec_char)
+            
+            
+        #Dev Tools for Improv
+        if keycode[1] == 'j':
+            self.audio_cont.mixer.remove(self.loop1)
+            
+        if keycode[1] == 'k':
+            self.audio_cont.mixer.remove(self.loop2)
+            
+        if keycode[1] == 'l':
+            self.audio_cont.mixer.remove(self.loopF)
+            
+        if keycode[1] == ';':
+            self.audio_cont.mixer.remove(self.final)
+            
 
     def on_update(self) :
         if kivyClock.get_fps() > 40:
@@ -306,6 +330,13 @@ class SongData(object):
         self.all_words=[]
         self.phrases=[]
         self.phrases_dict = OrderedDict()
+        
+        #Loop = (Lyric, startTime, duration)
+
+        self.loops = []
+        #Mark = lyric: (startTime, endTime)
+        self.marks = {}
+        
     # read the gems and song data. You may want to add a secondary filepath
     # argument if your barline data is stored in a different txt file.
     def read_data(self, words_filepath):
@@ -352,6 +383,36 @@ class SongData(object):
 
     def get_phrases_in_order(self):
         return self.phrases
+        
+    def read_improv(self, loop_filepath, mark_filepath):
+        
+        loopFile = open(loop_filepath)
+        lines = loopFile.readlines()
+        for line in lines:
+            #Lyric, startTime, duration
+            time, _, duration, name = line.strip().split('\t')
+            self.loops.append((name, time, duration))
+        
+        loopFile.close()
+        
+        markFile = open(mark_filepath)
+        lines = markFile.readlines()
+        tempMarks = []
+        for line in lines:
+            time, lyric = line.strip().split('\t')
+            tempMarks.append((time, lyric))
+            
+        markFile.close()
+        for i in range(len(tempMarks)):
+            
+            #Even entries are start times, odd entries are endTimes
+            if i%2== 0:
+                
+                #Mark = (lyric, startTime, endTime)
+                self.marks[tempMarks[i][1]] = (tempMarks[i][0], tempMarks[i+1][0])
+        
+        return (self.loops, self.marks)
+        
 
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb):

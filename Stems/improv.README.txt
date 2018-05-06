@@ -1,0 +1,1 @@
+Put the loops in a text file. Each loop is 4 measures/bars (except for loopF which is just loop1 + loop2). Final represents the 3 bars leading up to the rest of the song and the one bar of silence.
