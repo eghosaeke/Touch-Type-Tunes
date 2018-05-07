@@ -46,7 +46,7 @@ def score_label():
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
+    l = BasicLabel("Score",tpos=(600, 590),font_size=35,font_name=font_name)
     return l
 
 def system_info_label():
@@ -143,22 +143,22 @@ class MainWidget(BaseWidget):
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
 
         self.caps_on = False
-        test_text = "HELLO WOLRD"
-        test_text += "\nFinal Score: "+"{:,}".format(65464163)
-        test_text += "\nLongest Streak: "+"{:,}".format(5264)
-        test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
-        test_text += "\n\nPress 'r' to restart the game"
-        self.hello = BasicLabel(test_text,tpos=(0,600),font_size=50,invert_text=False,font_name="DejaVuSans")
-        # self.hello.set_color(6,(0,1,0))
-        # # self.hello.set_bold(0)
-        # self.hello.set_color(6,(0,0,1))
-        # self.hello.set_bold(6)
-        # self.hello.set_italic(6)
-        # for i in range(5):
-        #     self.hello.set_color(i,(0,1,0))
-        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        # self.canvas.add(self.rect)
-        self.canvas.add(self.hello)
+        # test_text = "HELLO WOLRD"
+        # test_text += "\nFinal Score: "+"{:,}".format(65464163)
+        # test_text += "\nLongest Streak: "+"{:,}".format(5264)
+        # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
+        # test_text += "\n\nPress 'r' to restart the game"
+        # self.hello = BasicLabel(test_text,tpos=(0,600),font_size=50,invert_text=False,font_name="DejaVuSans")
+        # # self.hello.set_color(6,(0,1,0))
+        # # # self.hello.set_bold(0)
+        # # self.hello.set_color(6,(0,0,1))
+        # # self.hello.set_bold(6)
+        # # self.hello.set_italic(6)
+        # # for i in range(5):
+        # #     self.hello.set_color(i,(0,1,0))
+        # # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        # # self.canvas.add(self.rect)
+        # self.canvas.add(self.hello)
 
         
     def on_key_down(self, keycode, modifiers):
@@ -167,11 +167,11 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'capslock':
             self.caps_on = not self.caps_on
 
-        if keycode[1] == 'tab':
-            # self.hello.text += "\nHello World Again!"
-            print "prev tpos: ", self.info.tpos
-            self.info.tpos = (self.info.tpos[0],self.info.tpos[1]-20)
-            print "new tpos: ", self.info.tpos
+        # if keycode[1] == 'tab':
+        #     # self.hello.text += "\nHello World Again!"
+        #     print "prev tpos: ", self.info.tpos
+        #     self.info.tpos = (self.info.tpos[0],self.info.tpos[1]-20)
+        #     print "new tpos: ", self.info.tpos
         # play / pause toggle
         if keycode[1] == 'enter':
             if "shift" in modifiers:
@@ -197,7 +197,7 @@ class MainWidget(BaseWidget):
             if self.caps_on or 'shift' in modifiers:
                 letter = letter.upper()
             self.player.on_button_down(letter)
-            self.hello.text += letter
+            # self.hello.text += letter
 
             # print "down ", letter , keycode[1]
         
@@ -206,8 +206,8 @@ class MainWidget(BaseWidget):
             spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
             if spec_char != None:
                 self.player.on_button_down(spec_char)
-                print "down ", spec_char
-                self.hello.text += spec_char
+#                print "down ", spec_char
+#                self.hello.text += spec_char
                 
             
 #        #Dev Tools for Improv:
@@ -229,7 +229,6 @@ class MainWidget(BaseWidget):
 #            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
 #            self.audio_cont.mixer.add(self.final)
             
-        
 
     def on_key_up(self, keycode):
         # button up
@@ -260,10 +259,10 @@ class MainWidget(BaseWidget):
     def on_update(self) :
         if kivyClock.get_fps() > 40:
             self.player.on_update()
-        self.info.text = str(Window.mouse_pos)
-        self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
-        self.info.text += '\nfps:%d' % kivyClock.get_fps()
-        self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        # self.info.text = str(Window.mouse_pos)
+        # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
+        # self.info.text += '\nfps:%d' % kivyClock.get_fps()
+        # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         self.score_label.text = "Score"
         self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
         

@@ -253,7 +253,7 @@ class BasicLabel(InstructionGroup):
     def __init__(self,text,tpos,**kwargs):
         super(BasicLabel, self).__init__()
         self.og_pos = tpos
-        text_size = (Window.width-tpos[0],tpos[1])
+        text_size = (Window.width-tpos[0],None)
         self.label = CustomLabel(text, text_size=text_size,**kwargs)
         self.rect = Rectangle(size=self.label.texture.size,pos=self.og_pos,texture=self.label.texture)
         self.max_size = self.label.texture.size
