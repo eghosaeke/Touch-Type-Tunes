@@ -50,6 +50,18 @@ def score_label():
     l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
     return l
 
+
+
+def improv_label():
+    if platform == "macosx":        
+        font_name= "Comic Sans MS"
+    elif platform == "win":
+        font_name = "comic"
+    else:
+        font_name = ""
+    l = BasicLabel("",tpos=(Window.width*0.35, Window.height*0.65),font_size=35,font_name=font_name)
+    return l 
+
 def system_info_label():
     l = BasicLabel("",tpos=(20, 590),font_size=25)
     return l
@@ -148,6 +160,8 @@ class MainWidget(BaseWidget):
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
 
         self.caps_on = False
+        self.improv_label = improv_label()
+        self.canvas.add(self.improv_label)
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
@@ -190,8 +204,8 @@ class MainWidget(BaseWidget):
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            # self.player.on_button_down("_")
-            self.player.on_button_down(" ")
+
+            self.player.on_button_down("_")
             # self.hello.text += " "
             # print "down ", "spacebar"
         
