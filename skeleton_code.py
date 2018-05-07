@@ -46,7 +46,7 @@ def score_label():
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("Score",tpos=(600, 590),font_size=35,font_name=font_name)
+    l = BasicLabel("Score",tpos=(Window.width*3/4, Window.height/2),font_size=35,font_name=font_name)
     return l
 
 def system_info_label():
@@ -110,7 +110,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-Full-selected.txt')
+        self.gem_data.read_data('Stems/Fetish-selected-milestone2.txt')
         self.gem_data.get_phrases()
         
         #Improv stuff
@@ -138,7 +138,7 @@ class MainWidget(BaseWidget):
         self.bind(size=self.update_bg)
 
 
-        self.canvas.add(Color(1,1,1))
+        self.canvas.add(Color(1,1,1,0.8))
         self.canvas.add(self.beat_disp)
         self.score_label = score_label()
         self.canvas.add(self.score_label)
