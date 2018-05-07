@@ -208,6 +208,7 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'spacebar':
 
             self.player.on_button_down(" ")
+
             if self.improv and self.improv_word:
                 buf = self.vocalImprovBuffers.get(self.improv_word,None)
                 if buf:
@@ -305,7 +306,7 @@ class MainWidget(BaseWidget):
 
             self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
             self.canvas.add(self.user_input)
-            self.impovise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
+            self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
             self.canvas.add(self.improvise)
             tpos = [(100,400),(100,350),(100,300),(100,250)]
             i = 0
@@ -323,11 +324,13 @@ class MainWidget(BaseWidget):
     def on_update(self) :
         if kivyClock.get_fps() > 40:
             self.player.on_update()
-            self.player.game_paused = False
-            self.beat_disp.game_paused = False
-        elif kivyClock.get_fps() <= 40:
-            self.player.game_paused = True
-            self.beat_disp.game_paused = True
+            
+            #Optimization for paused
+#            self.player.game_paused = False
+#            self.beat_disp.game_paused = False
+#        elif kivyClock.get_fps() <= 40:
+#            self.player.game_paused = True
+#            self.beat_disp.game_paused = True
         # self.info.text = str(Window.mouse_pos)
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
@@ -352,16 +355,13 @@ class AudioController(object):
             self.audio = Audio(2)
         self.mixer = Mixer()
         self.song_path = song_path
-<<<<<<< HEAD
-        self.bg_audio = WaveFile(self.song_path+'_inst.wav')
-        self.solo_audio = WaveFile(self.song_path+'_vocals.wav')
+
         self.miss_sfx = WaveFile("miss2.wav")
         self.miss_sfx_gen= WaveGenerator(self.miss_sfx)
-=======
         self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
         self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
         # self.miss_sfx = WaveFile("break.wav")
->>>>>>> 69b090a... basic improv section works, need better graphics and more audio maybe
+
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.audio.set_generator(self.mixer)
