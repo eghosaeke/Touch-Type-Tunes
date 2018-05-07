@@ -294,10 +294,9 @@ class AudioController(object):
         self.bg_audio = WaveFile(self.song_path+'_inst.wav')
         self.solo_audio = WaveFile(self.song_path+'_vocals.wav')
         self.miss_sfx = WaveFile("miss2.wav")
+        self.miss_sfx_gen= WaveGenerator(self.miss_sfx)
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
-        # self.miss_sfx_gen = WaveGenerator(self.miss_sfx)
-        # self.miss_sfx_gen.set_gain(2.0)
         self.audio.set_generator(self.mixer)
 
     def start(self):
@@ -329,13 +328,15 @@ class AudioController(object):
     # play a sound-fx (miss sound)
     def play_sfx(self):
         # miss_sfx = WaveFile("miss1.wav")
-        miss_sfx_gen = WaveGenerator(self.miss_sfx)
-        miss_sfx_gen.set_gain(.3)
-        if self.mixer.contains(miss_sfx_gen):
-            miss_sfx_gen.reset()
-            miss_sfx_gen.play()
+        # miss_sfx_gen = WaveGenerator(self.miss_sfx)
+        # miss_sfx_gen.set_gain(.3)
+        print len(self.mixer.generators)
+        if self.mixer.contains(self.miss_sfx_gen):
+            self.miss_sfx_gen.reset()
+            self.miss_sfx_gen.play()
         else:
-            self.mixer.add(miss_sfx_gen)
+            self.mixer.add(self.miss_sfx_gen)
+            self.miss_sfx_gen.play()
 
     def set_listener(self,listen_cb):
         self.audio.listen_func = listen_cb
@@ -484,8 +485,8 @@ class LyricsPhrase(InstructionGroup):
         self.queue_cb = queue_cb
         self.added_lyric = False
         self.on_screen = False
-        print "text to type: ",text_to_type
-        print "text: ",text
+        # print "text to type: ",text_to_type
+        # print "text: ",text
         self.label.set_colors((0,.87,1,1),text_to_type)
         # for i in range(len(self.label.text)):
         #     self.label.set_colors((0,0,0,0),"_")
@@ -665,8 +666,10 @@ class Player(object):
 
                 else:
                    self.display.curr_lyric.on_miss(curr_lyric.current) 
-                   self.audio_ctrl.set_mute(True)
+                   print 'miss'
                    self.audio_ctrl.play_sfx()
+                   self.audio_ctrl.set_mute(True)
+                   
 
 
         #self.display.on_button_down(char,False)
