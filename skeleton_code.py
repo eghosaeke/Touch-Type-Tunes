@@ -126,14 +126,18 @@ class MainWidget(BaseWidget):
         self.marksHit = []
         
         self.improv = False
-
         
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
-            self.bg_img = Rectangle(size=(Window.width,Window.height),pos = (0,0),source="mic-booth.jpg")
+            self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
             Color(0, 0, 0, 0.3)
-            self.sidebar = Rectangle(size = (Window.width/2,Window.height),pos =(0,0))
+            self.sidebar = Rectangle(size = self.size ,pos =self.pos)
+
+        self.bind(pos=self.update_bg)
+        self.bind(size=self.update_bg)
+
+
         self.canvas.add(Color(1,1,1))
         self.canvas.add(self.beat_disp)
         self.score_label = score_label()
@@ -159,6 +163,10 @@ class MainWidget(BaseWidget):
         # # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
         # # self.canvas.add(self.rect)
         # self.canvas.add(self.hello)
+    def update_bg(self, *args):
+        self.bg_img.pos = self.pos
+        self.bg_img.size = self.size
+        self.sidebar.size=[float(self.size[0])/2,self.size[1]]
 
         
     def on_key_down(self, keycode, modifiers):
@@ -181,7 +189,8 @@ class MainWidget(BaseWidget):
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-            self.player.on_button_down("_")
+            # self.player.on_button_down("_")
+            self.player.on_button_down(" ")
             # self.hello.text += " "
             # print "down ", "spacebar"
         
@@ -284,7 +293,7 @@ class AudioController(object):
         self.song_path = song_path
         self.bg_audio = WaveFile(self.song_path+'_inst.wav')
         self.solo_audio = WaveFile(self.song_path+'_vocals.wav')
-        # self.miss_sfx = WaveFile("break.wav")
+        self.miss_sfx = WaveFile("miss2.wav")
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         # self.miss_sfx_gen = WaveGenerator(self.miss_sfx)
@@ -319,9 +328,9 @@ class AudioController(object):
 
     # play a sound-fx (miss sound)
     def play_sfx(self):
-        miss_sfx = WaveFile("break.wav")
+        # miss_sfx = WaveFile("miss1.wav")
         miss_sfx_gen = WaveGenerator(self.miss_sfx)
-        miss_sfx_gen.set_gain(1.5)
+        miss_sfx_gen.set_gain(.3)
         if self.mixer.contains(miss_sfx_gen):
             miss_sfx_gen.reset()
             miss_sfx_gen.play()
@@ -378,20 +387,29 @@ class SongData(object):
             
             if "." not in text:
                 if '*' in text:
-                    phrase+= text[:-1]+"_"
-                    phrase_to_type += text[:-1]+"_"
+                    # phrase+= text[:-1]+"_"
+                    phrase+= text[:-1]+" "
+
+                    # phrase_to_type += text[:-1]+"_"
+                    phrase_to_type += text[:-1]+" "
                 else:
-                    phrase += text + "_"
+                    # phrase += text + "_"
+                    phrase += text + " "
                 if not start_time:
                   start_time = float(start_sec)
             else:
                 # print "phrase end: ", phrase
                 # print "end text: ", text
-                split_txt = phrase.strip().split('_')
+                # split_txt = phrase.strip().split('_')
+                split_txt = phrase.strip().split(' ')
+                # if text[:-1] != split_txt[-1] :
+                #     phrase += split_txt[-1][:-1]
                 if text[:-1] != split_txt[-1] :
                     phrase += split_txt[-1][:-1]
-                phrase = phrase.rstrip("_")
-                phrase_to_type = phrase_to_type.rstrip("_")
+                # phrase = phrase.rstrip("_")
+                # phrase_to_type = phrase_to_type.rstrip("_")
+                phrase = phrase.rstrip(" ")
+                phrase_to_type = phrase_to_type.rstrip(" ")
                 
                 if not end_time:
                     end_time = float(start_sec)
@@ -469,7 +487,8 @@ class LyricsPhrase(InstructionGroup):
         print "text to type: ",text_to_type
         print "text: ",text
         self.label.set_colors((0,.87,1,1),text_to_type)
-        self.label.set_colors((0,0,0,0),"_")
+        # for i in range(len(self.label.text)):
+        #     self.label.set_colors((0,0,0,0),"_")
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
@@ -635,15 +654,19 @@ class Player(object):
         if not self.game_paused:
             curr_lyric = self.display.curr_lyric
             if curr_lyric.on_screen:
+                print curr_lyric.next_avail
                 if curr_lyric.next_avail == char:
                     self.display.on_button_down(char,True)
                     self.display.curr_lyric.on_hit(curr_lyric.current)
-                    # print curr_lyric.next_avail,"next"
+                    self.audio_ctrl.set_mute(False)
                     if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
                         self.word_hits+=100
                         # print self.word_hits, "SCORE"
+
                 else:
                    self.display.curr_lyric.on_miss(curr_lyric.current) 
+                   self.audio_ctrl.set_mute(True)
+                   self.audio_ctrl.play_sfx()
 
 
         #self.display.on_button_down(char,False)
