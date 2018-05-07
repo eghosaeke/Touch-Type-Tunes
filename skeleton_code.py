@@ -121,7 +121,7 @@ class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
         self.song = 'Stems/Fetish'
-        self.audio_cont = AudioController(self.song)
+        self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb)
         self.gem_data = SongData()
         self.gem_data.read_data('Stems/Fetish-selected-milestone2.txt')
         self.gem_data.get_phrases()
@@ -139,6 +139,9 @@ class MainWidget(BaseWidget):
         self.marksHit = []
         
         self.improv = False
+
+        self.improv_word = ""
+        self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
         
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         with self.canvas.before:
@@ -204,7 +207,13 @@ class MainWidget(BaseWidget):
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
 
-            self.player.on_button_down("_")
+            self.player.on_button_down(" ")
+            if self.improv and self.improv_word:
+                buf = self.vocalImprovBuffers.get(self.improv_word,None)
+                if buf:
+                    self.audio_cont.load_improv([buf])
+            self.improv_word = ""
+            self.user_input.text = ""
             # self.hello.text += " "
             # print "down ", "spacebar"
         
@@ -220,6 +229,10 @@ class MainWidget(BaseWidget):
             if self.caps_on or 'shift' in modifiers:
                 letter = letter.upper()
             self.player.on_button_down(letter)
+            if self.improv:
+                self.improv_word += letter
+                self.user_input.text += letter
+
             # self.hello.text += letter
 
             # print "down ", letter , keycode[1]
@@ -277,20 +290,27 @@ class MainWidget(BaseWidget):
 #        if keycode[1] == ';':
 #            self.audio_cont.mixer.remove(self.final)
             
-    def improv_cb(end=False):
+    def improv_cb(self,end=False):
         if end:
             self.improv = False
             self.player.improv = False
             self.beat_disp.improv = False
             self.audio_cont = False
+            self.canvas.remove(self.user_input)
+            self.canvas.remove(self.improvise)
             for label in self.improv_labels:
                 self.canvas.remove(label)
 
         else:
-            tpos = [(100,500),(100,400),(100,300),(100,200)]
+
+            self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
+            self.canvas.add(self.user_input)
+            self.impovise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
+            self.canvas.add(self.improvise)
+            tpos = [(100,400),(100,350),(100,300),(100,250)]
             i = 0
             self.improv_labels = []
-            for voc in vocalImprovBuffers:
+            for voc in self.vocalImprovBuffers:
                 self.improv_label = improv_label(voc,tpos[i])
                 self.canvas.add(self.improv_label)
                 self.improv_labels.append(self.improv_label)
@@ -298,11 +318,16 @@ class MainWidget(BaseWidget):
             self.improv = True
             self.player.improv = True
             self.beat_disp.improv = True
-            self.audio_cont = True
+            self.audio_cont.improv = True
 
     def on_update(self) :
         if kivyClock.get_fps() > 40:
             self.player.on_update()
+            self.player.game_paused = False
+            self.beat_disp.game_paused = False
+        elif kivyClock.get_fps() <= 40:
+            self.player.game_paused = True
+            self.beat_disp.game_paused = True
         # self.info.text = str(Window.mouse_pos)
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
@@ -327,16 +352,23 @@ class AudioController(object):
             self.audio = Audio(2)
         self.mixer = Mixer()
         self.song_path = song_path
+<<<<<<< HEAD
         self.bg_audio = WaveFile(self.song_path+'_inst.wav')
         self.solo_audio = WaveFile(self.song_path+'_vocals.wav')
         self.miss_sfx = WaveFile("miss2.wav")
         self.miss_sfx_gen= WaveGenerator(self.miss_sfx)
+=======
+        self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+        self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+        # self.miss_sfx = WaveFile("break.wav")
+>>>>>>> 69b090a... basic improv section works, need better graphics and more audio maybe
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.audio.set_generator(self.mixer)
         self.game_paused = True
         self.game_started = False
         self.improv = False
+        self.last_part = False
         self.improv_cb = improv_cb
 
     def start(self):
@@ -384,16 +416,42 @@ class AudioController(object):
 
     def set_listener(self,listen_cb):
         self.audio.listen_func = listen_cb
+    
+    def load_improv(self,bufs):
+        seq = Sequencer()
+        for buf in bufs:
+            improv_bg_audio = WaveGenerator(buf)
+            improv_bg_audio.set_gain(1.0)
+            seq.add(improv_bg_audio)
+        self.mixer.add(seq)
+
+    
+    def load_part2(self):
+        self.bg_audio = WaveFile(self.song_path+'_inst_2.wav')
+        self.solo_audio = WaveFile(self.song_path+'_vocals_2.wav')
+        self.bg_gen = WaveGenerator(self.bg_audio)
+        self.solo_gen = WaveGenerator(self.solo_audio)
+        self.bg_gen.set_gain(0.5)
+        self.solo_gen.set_gain(0.5)
+        self.mixer.add(self.bg_gen)
+        self.mixer.add(self.solo_gen)
+
 
     # needed to update audio
     def on_update(self):
         self.audio.on_update()
-        if not self.game_paused and self.game_started:
+        if not self.game_paused and self.game_started and not self.last_part:
             if self.mixer.get_num_generators() == 0:
                 if not self.improv and self.improv_cb:
                     self.improv_cb()
                 elif self.improv and self.improv_cb:
                     self.improv_cb(end=True)
+                    self.load_part2()
+                    self.last_part = True
+        elif self.game_started and self.last_part:
+            self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+            self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+
 
 
 # holds data for gems and barlines.
@@ -517,7 +575,7 @@ class LyricsPhrase(InstructionGroup):
         self.end_of_lyric=False
 
         self.pos = np.array(pos, dtype=np.float)
-        # text_size = (Window.width-pos[0],None)
+        text_size = (Window.width-pos[0],None)
         if platform == "win":
             self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
         elif platform == "macosx":
