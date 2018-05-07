@@ -46,7 +46,8 @@ def score_label():
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("Score",tpos=(Window.width*3/4, Window.height/2),font_size=35,font_name=font_name)
+
+    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
     return l
 
 def system_info_label():
