@@ -182,7 +182,7 @@ class MainWidget(BaseWidget):
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
             self.player.on_button_down("_")
-            self.hello.text += " "
+            # self.hello.text += " "
             # print "down ", "spacebar"
         
         
@@ -267,7 +267,7 @@ class MainWidget(BaseWidget):
         
 
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
-        self.improv = self.player.improv
+        # self.improv = self.player.improv
 
 
 # creates the Audio driver
