@@ -405,7 +405,7 @@ class AudioController(object):
         # miss_sfx = WaveFile("miss1.wav")
         # miss_sfx_gen = WaveGenerator(self.miss_sfx)
         # miss_sfx_gen.set_gain(.3)
-        print len(self.mixer.generators)
+#        print len(self.mixer.generators)
         if self.mixer.contains(self.miss_sfx_gen):
             self.miss_sfx_gen.reset()
             self.miss_sfx_gen.play()
@@ -490,7 +490,7 @@ class SongData(object):
             #2) trigger the improv section when the word improv is dequed (find )
             
             #Don't put the improv words on display
-            if '\\' in word:
+            if '\/' in word:
                 #TODO: 
                 continue
             
@@ -620,8 +620,8 @@ class LyricsPhrase(InstructionGroup):
             self.end_of_lyric=False
         except Exception as e:
             self.end_of_lyric=True
-            print e
-            print "END OF LYRIC"
+#            print e
+#            print "END OF LYRIC"
 
 
     
@@ -765,7 +765,7 @@ class Player(object):
         if not self.game_paused and not self.improv:
             curr_lyric = self.display.curr_lyric
             if curr_lyric.on_screen:
-                print curr_lyric.next_avail
+#                print curr_lyric.next_avail
                 if curr_lyric.next_avail == char:
                     self.display.on_button_down(char,True)
                     self.display.curr_lyric.on_hit(curr_lyric.current)
@@ -776,7 +776,7 @@ class Player(object):
 
                 else:
                    self.display.curr_lyric.on_miss(curr_lyric.current) 
-                   print 'miss'
+#                   print 'miss'
                    self.audio_ctrl.play_sfx()
                    self.audio_ctrl.set_mute(True)
                    

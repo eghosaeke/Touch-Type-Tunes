@@ -101,7 +101,8 @@ class CustomLabel(object):
             self.label.text = render_text
             self.label.refresh()
         except Exception as e:
-            print e
+#            print e
+            pass
 
 
     def set_colors(self,color,substr="",start=None,end=None):
@@ -161,7 +162,8 @@ class CustomLabel(object):
             self.label.text = render_text
             self.label.refresh()
         except Exception as e:
-            print e
+#            print e
+            pass
 
 
     def set_italic(self,idx):
@@ -188,7 +190,8 @@ class CustomLabel(object):
             self.label.text = render_text
             self.label.refresh()
         except Exception as e:
-            print e
+#            print e
+            pass
 
     def clear_markups(self,idx):
         """
