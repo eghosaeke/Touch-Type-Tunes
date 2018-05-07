@@ -52,14 +52,14 @@ def score_label():
 
 
 
-def improv_label():
+def improv_label(text,tpos):
     if platform == "macosx":        
         font_name= "Comic Sans MS"
     elif platform == "win":
         font_name = "comic"
     else:
         font_name = ""
-    l = BasicLabel("",tpos=(Window.width*0.35, Window.height*0.65),font_size=35,font_name=font_name)
+    l = BasicLabel(text,tpos=tpos,font_size=35,font_name=font_name)
     return l 
 
 def system_info_label():
@@ -160,8 +160,7 @@ class MainWidget(BaseWidget):
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
 
         self.caps_on = False
-        self.improv_label = improv_label()
-        self.canvas.add(self.improv_label)
+        
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
@@ -278,6 +277,28 @@ class MainWidget(BaseWidget):
 #        if keycode[1] == ';':
 #            self.audio_cont.mixer.remove(self.final)
             
+    def improv_cb(end=False):
+        if end:
+            self.improv = False
+            self.player.improv = False
+            self.beat_disp.improv = False
+            self.audio_cont = False
+            for label in self.improv_labels:
+                self.canvas.remove(label)
+
+        else:
+            tpos = [(100,500),(100,400),(100,300),(100,200)]
+            i = 0
+            self.improv_labels = []
+            for voc in vocalImprovBuffers:
+                self.improv_label = improv_label(voc,tpos[i])
+                self.canvas.add(self.improv_label)
+                self.improv_labels.append(self.improv_label)
+                i += 1
+            self.improv = True
+            self.player.improv = True
+            self.beat_disp.improv = True
+            self.audio_cont = True
 
     def on_update(self) :
         if kivyClock.get_fps() > 40:
@@ -298,7 +319,7 @@ class MainWidget(BaseWidget):
 # creates a song and loads it with solo and bg audio tracks
 # creates snippets for audio sound fx
 class AudioController(object):
-    def __init__(self, song_path,listener=None):
+    def __init__(self, song_path,improv_cb=None,listener=None):
         super(AudioController, self).__init__()
         if listener:
             self.audio = Audio(2,listener)
@@ -313,6 +334,10 @@ class AudioController(object):
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.audio.set_generator(self.mixer)
+        self.game_paused = True
+        self.game_started = False
+        self.improv = False
+        self.improv_cb = improv_cb
 
     def start(self):
         if self.mixer.contains(self.bg_gen):
@@ -327,11 +352,14 @@ class AudioController(object):
         self.solo_gen.set_gain(0.5)
         self.mixer.add(self.bg_gen)
         self.mixer.add(self.solo_gen)
+        self.game_paused = False
+        self.game_started = True
 
     # start / stop the song
     def toggle(self):
         self.bg_gen.play_toggle()
         self.solo_gen.play_toggle()
+        self.game_paused = not self.game_paused
         
     # mute / unmute the solo track
     def set_mute(self, mute):
@@ -360,6 +388,12 @@ class AudioController(object):
     # needed to update audio
     def on_update(self):
         self.audio.on_update()
+        if not self.game_paused and self.game_started:
+            if self.mixer.get_num_generators() == 0:
+                if not self.improv and self.improv_cb:
+                    self.improv_cb()
+                elif self.improv and self.improv_cb:
+                    self.improv_cb(end=True)
 
 
 # holds data for gems and barlines.
@@ -576,6 +610,7 @@ class BeatMatchDisplay(InstructionGroup):
         self.add(self.objects)
         self.game_paused = True
         self.game_started = False
+        self.improv = False
         self.lyrics_deque = deque()
 
     def start(self):
@@ -625,7 +660,7 @@ class BeatMatchDisplay(InstructionGroup):
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
-        if not self.game_paused:
+        if not self.game_paused and not self.improv:
             self.objects.on_update()
         
 
@@ -644,6 +679,7 @@ class Player(object):
         self.word_hits = 0
         self.gem_misses = 0
         self.longest_streak = 0
+        self.improv = False
         
 
 
@@ -668,7 +704,7 @@ class Player(object):
 
     # called by MainWidget
     def on_button_down(self, char):
-        if not self.game_paused:
+        if not self.game_paused and not self.improv:
             curr_lyric = self.display.curr_lyric
             if curr_lyric.on_screen:
                 print curr_lyric.next_avail
@@ -692,7 +728,7 @@ class Player(object):
 
     # called by MainWidget
     def on_button_up(self, char):
-        if not self.game_paused:
+        if not self.game_paused and not self.improv:
             self.display.on_button_up(char)
 
     # needed to check if for pass gems (ie, went past the slop window)
