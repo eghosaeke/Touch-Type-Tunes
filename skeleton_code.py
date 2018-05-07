@@ -336,6 +336,7 @@ class AudioController(object):
             self.miss_sfx_gen.play()
         else:
             self.mixer.add(self.miss_sfx_gen)
+            self.miss_sfx_gen.reset()
             self.miss_sfx_gen.play()
 
     def set_listener(self,listen_cb):
