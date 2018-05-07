@@ -181,11 +181,35 @@ class MainWidget(BaseWidget):
 
             # print "down ", letter , keycode[1]
 
-        spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
-        if spec_char != None:
-            self.player.on_button_down(spec_char)
-            print "down ", spec_char
-            # self.hello.text += spec_char
+        
+        #Disable punctuation in improv mode:
+        if not self.improv:
+            spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
+            if spec_char != None:
+                self.player.on_button_down(spec_char)
+#                print "down ", spec_char
+#                self.hello.text += spec_char
+                
+            
+#        #Dev Tools for Improv:
+#        #Testing buffer playback
+#        bufferKeys = ['Loop1', 'Loop2', 'LoopF', 'Final']
+#        if keycode[1] == 'j':
+#            self.loop1 = WaveGenerator(self.buffers[bufferKeys[0]], True)
+#            self.audio_cont.mixer.add(self.loop1)
+#        
+#        if keycode[1] == 'k':
+#            self.loop2 = WaveGenerator(self.buffers[bufferKeys[1]], True)
+#            self.audio_cont.mixer.add(self.loop2)
+#            
+#        if keycode[1] == 'l':
+#            self.loopF = WaveGenerator(self.buffers[bufferKeys[2]], True)
+#            self.audio_cont.mixer.add(self.loopF)
+#        
+#        if keycode[1] == ';':
+#            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
+#            self.audio_cont.mixer.add(self.final)
+            
 
     def on_key_up(self, keycode):
         # button up
