@@ -43,6 +43,7 @@ class CustomLabel(object):
             color = [c for c in color]+[1]
         self.invert_text = invert_text
         self.text_dict = {i:text[i] for i in range(len(text))}
+        self.og_text = text
         self.label_text = self.parse_text(text,invert_text)
         self.label = MarkupLabel(text=self.label_text,font_size=font_size,color=color,**kwargs)
         self.markup_regex = re.compile("(\[.+\])")
@@ -124,7 +125,8 @@ class CustomLabel(object):
             Number representing end index for setting             Default: None
         """
         if substr:
-            start = self.text.find(substr)
+            og_text = self.og_text.replace("\n", " ")
+            start = og_text.find(substr)
             if start != -1:
                 end = start + len(substr)
                 for idx in range(start,end):
@@ -184,6 +186,64 @@ class CustomLabel(object):
             else:
                 markups = self.markup_regex.split(old_text)
                 new_text = ["[i]"] + markups+ ["[/i]"]
+                new_text = "".join(new_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+        except Exception as e:
+#            print e
+            pass
+
+    def set_size(self,idx,fsize):
+        """
+        Function to change the color of an individual character in the label
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        fsize: int
+            Number representing font size of character
+        """
+        try:
+            old_text = self.text_dict[idx]
+            size_regex = re.compile("(\[size=\d\])")
+            match = size_regex.search(old_text)
+            if match:
+                new_text = re.sub('\d',fsize,old_text)
+            else:
+                markups = self.markup_regex.split(old_text)
+                new_text = ["[size=%d]" % fsize] + markups+ ["[/size]"]
+                new_text = "".join(new_text)
+            self.text_dict[idx] = new_text
+            render_text = self.join_text()
+            self.label.text = render_text
+            self.label.refresh()
+        except Exception as e:
+#            print e
+            pass
+    def set_font(self,idx,font):
+        """
+        Function to change the color of an individual character in the label
+
+        Parameters
+        ----------
+        idx: int
+            Number representing index in string of the char to manipulate
+        font: string
+            String representing font name to set the character to
+                **Will not work if font isn't available for your operating system**
+        """
+        try:
+            old_text = self.text_dict[idx]
+            font_regex = re.compile("(\[font=\d\])")
+            match = font_regex.search(old_text)
+            if match:
+                new_text = re.sub('\d',font,old_text)
+            else:
+                markups = self.markup_regex.split(old_text)
+                new_text = ["[font=%s]" % font] + markups+ ["[/font]"]
                 new_text = "".join(new_text)
             self.text_dict[idx] = new_text
             render_text = self.join_text()

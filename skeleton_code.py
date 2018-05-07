@@ -30,6 +30,7 @@ import matplotlib.colors as colors
 from colorsys import hsv_to_rgb
 from collections import deque, OrderedDict
 import re
+import textwrap
 from customlabel import BasicLabel, CustomLabel
 
 
@@ -142,6 +143,7 @@ class MainWidget(BaseWidget):
 
         self.improv_word = ""
         self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
+        self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
         
         self.beat_disp = BeatMatchDisplay(self.gem_data)
         with self.canvas.before:
@@ -161,7 +163,7 @@ class MainWidget(BaseWidget):
         self.info = system_info_label()
         self.canvas.add(self.info)
         self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
-
+        self.improv_labels = []
         self.caps_on = False
         
         # test_text = "HELLO WOLRD"
@@ -170,15 +172,16 @@ class MainWidget(BaseWidget):
         # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
         # test_text += "\n\nPress 'r' to restart the game"
         # self.hello = BasicLabel(test_text,tpos=(0,600),font_size=50,invert_text=False,font_name="DejaVuSans")
-        # # self.hello.set_color(6,(0,1,0))
-        # # # self.hello.set_bold(0)
-        # # self.hello.set_color(6,(0,0,1))
-        # # self.hello.set_bold(6)
-        # # self.hello.set_italic(6)
-        # # for i in range(5):
-        # #     self.hello.set_color(i,(0,1,0))
-        # # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        # # self.canvas.add(self.rect)
+        # self.hello = CustomLabel(test_text,font_size=40,font_name="DejaVuSans")
+        # self.hello.set_color(6,(0,1,0))
+        # # self.hello.set_bold(0)
+        # self.hello.set_color(6,(0,0,1))
+        # self.hello.set_bold(6)
+        # self.hello.set_italic(6)
+        # for i in range(5):
+        #     self.hello.set_color(i,(0,1,0))
+        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+        # self.canvas.add(self.rect)
         # self.canvas.add(self.hello)
     def update_bg(self, *args):
         self.bg_img.pos = self.pos
@@ -192,23 +195,29 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'capslock':
             self.caps_on = not self.caps_on
 
-        # if keycode[1] == 'tab':
-        #     # self.hello.text += "\nHello World Again!"
-        #     print "prev tpos: ", self.info.tpos
-        #     self.info.tpos = (self.info.tpos[0],self.info.tpos[1]-20)
-        #     print "new tpos: ", self.info.tpos
+        if keycode[1] == 'tab':
+            # self.hello.text += "\nHello World Again!"
+            self.hello.set_font(6,"comic")
+            
+            self.rect.texture = self.hello.texture
         # play / pause toggle
         if keycode[1] == 'enter':
             if "shift" in modifiers:
                 self.player.toggle_game()
             elif "ctrl" in modifiers:
+                self.improv = False
+                self.player.improv = False
+                self.beat_disp.improv = False
+                self.audio_cont.improv = False
+                self.canvas.remove(self.user_input)
+                self.canvas.remove(self.improvise)
+                for label in self.improv_labels:
+                    self.canvas.remove(label)
                 self.player.restart_game()
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
-
             self.player.on_button_down(" ")
-
             if self.improv and self.improv_word:
                 buf = self.vocalImprovBuffers.get(self.improv_word,None)
                 if buf:
@@ -296,7 +305,7 @@ class MainWidget(BaseWidget):
             self.improv = False
             self.player.improv = False
             self.beat_disp.improv = False
-            self.audio_cont = False
+            self.audio_cont.improv = False
             self.canvas.remove(self.user_input)
             self.canvas.remove(self.improvise)
             for label in self.improv_labels:
@@ -306,11 +315,9 @@ class MainWidget(BaseWidget):
 
             self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
             self.canvas.add(self.user_input)
-            self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
             self.canvas.add(self.improvise)
             tpos = [(100,400),(100,350),(100,300),(100,250)]
             i = 0
-            self.improv_labels = []
             for voc in self.vocalImprovBuffers:
                 self.improv_label = improv_label(voc,tpos[i])
                 self.canvas.add(self.improv_label)
@@ -361,7 +368,7 @@ class AudioController(object):
         self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
         self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
         # self.miss_sfx = WaveFile("break.wav")
-
+        self.improv_sect = Sequencer()
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.audio.set_generator(self.mixer)
@@ -372,12 +379,13 @@ class AudioController(object):
         self.improv_cb = improv_cb
 
     def start(self):
-        if self.mixer.contains(self.bg_gen):
+        if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
             """
             Needed to restart game
             """
-            self.bg_gen.release()
-            self.solo_gen.release()
+            self.mixer.remove_all()
+            self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+            self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.bg_gen.set_gain(0.5)
@@ -418,12 +426,11 @@ class AudioController(object):
         self.audio.listen_func = listen_cb
     
     def load_improv(self,bufs):
-        seq = Sequencer()
         for buf in bufs:
             improv_bg_audio = WaveGenerator(buf)
             improv_bg_audio.set_gain(1.0)
-            seq.add(improv_bg_audio)
-        self.mixer.add(seq)
+            self.improv_sect.add(improv_bg_audio)
+        self.mixer.add(self.improv_sect)
 
     
     def load_part2(self):
@@ -566,6 +573,25 @@ class SongData(object):
         
         return (self.loops, self.marks)
         
+def wrap_text(text,font_size,text_size):
+    max_size = text_size
+    space_size = 14
+    chr_s = 2
+    split_txt = text.split(" ")
+    fin_txts = [""]
+    i = 0
+    for t in split_txt:
+        # print "max_size: ",max_size
+        # print "line_size: ",(len(t)+len(fin_txts[i]))*font_size
+        if (len(t)+len(fin_txts[i]))*(font_size+chr_s) < max_size:
+            fin_txts[i] += t + " "
+        else:
+            fin_txts.append(t+" ")
+            i += 1
+
+    return "\n".join([x.strip() for x in fin_txts])
+
+
 
 class LyricsPhrase(InstructionGroup):
     def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb):
@@ -575,13 +601,16 @@ class LyricsPhrase(InstructionGroup):
         self.end_of_lyric=False
 
         self.pos = np.array(pos, dtype=np.float)
-        text_size = (Window.width-pos[0],None)
+        text_size = (Window.width/2.0-pos[0],None)
+        wrapped_text = wrap_text(text,17,text_size[0])
+        # print "wrap_text:\n", wrapped_text
+        
         if platform == "win":
-            self.label = CustomLabel(text,color=color, font_size=40,font_name="comic")
+            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40,font_name="comic")
         elif platform == "macosx":
-            self.label = CustomLabel(text,color=color, font_size=40,font_name="Microsoft Sans Serif")
+            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40,font_name="Microsoft Sans Serif")
         else:
-            self.label = CustomLabel(text,color=color, font_size=40)
+            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40)
         self.current=self.text.find(text_to_type)
         self.next_avail = self.text[self.current]
         self.start_time = start_t
@@ -662,7 +691,7 @@ class LyricsPhrase(InstructionGroup):
 class BeatMatchDisplay(InstructionGroup):
     def __init__(self, gem_data):
         super(BeatMatchDisplay, self).__init__()
-        self.start_pos = (50,Window.height+50)
+        self.start_pos = (20,Window.height+10)
         self.gem_data = gem_data
         self.objects = AnimGroup()
         self.add(self.objects)
@@ -758,6 +787,7 @@ class Player(object):
         self.audio_ctrl.start()
         self.word_hits = 0
         self.longest_streak = 0
+        self.game_paused = False
 
 
     # called by MainWidget

@@ -24,6 +24,9 @@ class Mixer(object):
     def remove(self, gen) :
         self.generators.remove(gen)
 
+    def remove_all(self):
+        self.generators = []
+
     def set_gain(self, gain) :
         self.gain = np.clip(gain, 0, 1)
 
