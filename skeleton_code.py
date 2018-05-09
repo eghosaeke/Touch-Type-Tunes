@@ -13,7 +13,8 @@ from common.gfxutil import *
 
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
-from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate
+from kivy.graphics import PushMatrix, PopMatrix, Translate, Scale, Rotate, ChangeState
+from kivy.graphics.transformation import Matrix
 from kivy.clock import Clock as kivyClock
 from kivy.core.text import Label
 from kivy.core.text.text_layout import layout_text
@@ -32,6 +33,7 @@ from collections import deque, OrderedDict
 import re
 import textwrap
 from customlabel import BasicLabel, CustomLabel
+from random import random, randint,choice
 
 
 
@@ -139,13 +141,9 @@ class MainWidget(BaseWidget):
         self.vocalImprovBuffers = make_wave_buffers(self.markRegionPath, self.song + '_vocals.wav')
         self.marksHit = []
         
-        self.improv = False
-
-        self.improv_word = ""
-        self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
-        self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
-        
+        self.improv = False 
         self.beat_disp = BeatMatchDisplay(self.gem_data)
+        self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf)
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
             self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
@@ -158,12 +156,12 @@ class MainWidget(BaseWidget):
 
         self.canvas.add(Color(1,1,1,0.8))
         self.canvas.add(self.beat_disp)
+        self.canvas.add(self.improv_disp)
         self.score_label = score_label()
         self.canvas.add(self.score_label)
         self.info = system_info_label()
         self.canvas.add(self.info)
-        self.player = Player(self.gem_data,self.beat_disp,self.audio_cont)
-        self.improv_labels = []
+        self.player = Player(self.gem_data,self.beat_disp,self.improv_disp,self.audio_cont)
         self.caps_on = False
         
         # test_text = "HELLO WOLRD"
@@ -209,21 +207,11 @@ class MainWidget(BaseWidget):
                 self.player.improv = False
                 self.beat_disp.improv = False
                 self.audio_cont.improv = False
-                self.canvas.remove(self.user_input)
-                self.canvas.remove(self.improvise)
-                for label in self.improv_labels:
-                    self.canvas.remove(label)
                 self.player.restart_game()
 
         #pass spacebar values to player as " "
         if keycode[1] == 'spacebar':
             self.player.on_button_down(" ")
-            if self.improv and self.improv_word:
-                buf = self.vocalImprovBuffers.get(self.improv_word,None)
-                if buf:
-                    self.audio_cont.load_improv([buf])
-            self.improv_word = ""
-            self.user_input.text = ""
             # self.hello.text += " "
             # print "down ", "spacebar"
         
@@ -239,10 +227,6 @@ class MainWidget(BaseWidget):
             if self.caps_on or 'shift' in modifiers:
                 letter = letter.upper()
             self.player.on_button_down(letter)
-            if self.improv:
-                self.improv_word += letter
-                self.user_input.text += letter
-
             # self.hello.text += letter
 
             # print "down ", letter , keycode[1]
@@ -302,27 +286,14 @@ class MainWidget(BaseWidget):
             
     def improv_cb(self,end=False):
         if end:
+            self.improv_disp.restart()
             self.improv = False
             self.player.improv = False
             self.beat_disp.improv = False
             self.audio_cont.improv = False
-            self.canvas.remove(self.user_input)
-            self.canvas.remove(self.improvise)
-            for label in self.improv_labels:
-                self.canvas.remove(label)
-
         else:
-
             self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
-            self.canvas.add(self.user_input)
-            self.canvas.add(self.improvise)
-            tpos = [(100,400),(100,350),(100,300),(100,250)]
-            i = 0
-            for voc in self.vocalImprovBuffers:
-                self.improv_label = improv_label(voc,tpos[i])
-                self.canvas.add(self.improv_label)
-                self.improv_labels.append(self.improv_label)
-                i += 1
+            self.improv_disp.start()
             self.improv = True
             self.player.improv = True
             self.beat_disp.improv = True
@@ -386,6 +357,7 @@ class AudioController(object):
             self.mixer.remove_all()
             self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
             self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+            self.last_part = False
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.bg_gen.set_gain(0.5)
@@ -424,6 +396,11 @@ class AudioController(object):
 
     def set_listener(self,listen_cb):
         self.audio.listen_func = listen_cb
+
+    def play_buf(self,buf):
+        gen = WaveGenerator(buf)
+        gen.set_gain(1.0)
+        self.mixer.add(gen)
     
     def load_improv(self,bufs):
         for buf in bufs:
@@ -681,10 +658,126 @@ class LyricsPhrase(InstructionGroup):
         # return self.pos[1] > 0
 
 
+class ImprovPhrase(InstructionGroup):
+    def __init__(self,phrase,letter,tpos,color):
+        super(ImprovPhrase, self).__init__()
+        self.phrase = phrase
+        self.og_pos = tpos
+        self.vel = np.array((randint(50,150),randint(-50,50)), dtype=np.float)
+        self.cust = CustomLabel(phrase,font_size=35)
+        self.cust.set_colors((0,.87,1,1),letter)
+        self.label = Rectangle(size=self.cust.texture.size,pos=tpos,texture=self.cust.texture)
+        self.size = self.cust.texture.size
+        self.np_tpos = np.array(tpos,dtype=np.float)
+        self.tpos = tpos
+        self.add(self.label)
 
+    def get_tpos(self):
+        return (self.pos[0], self.pos[1] + self.size[1])
+
+    # setter method for tpos of label. Allows for dynamic changes to the label
+    def set_tpos(self, p):
+        if isinstance(p,np.ndarray):
+            p = tuple(p.tolist())
+        self.pos = (p[0], p[1] - self.size[1])
+        if p != self.pos:
+            self.label.pos = self.pos
+            self.og_pos = p
+
+
+    def on_update(self, dt):
+        # integrate vel to get pos
+        self.np_tpos += self.vel * dt
+        # collision with floor
+        if self.np_tpos[1] - self.size[1] < 0:
+            self.vel[1] = -self.vel[1]
+            self.np_tpos[1] =  self.size[1]
+        if self.np_tpos[1] > Window.height:
+            self.vel[1] = -self.vel[1]
+            self.np_tpos[1] = Window.height
+        #collision with left wall
+        if self.np_tpos[0] < 0:
+            self.vel[0] = -self.vel[0]
+            self.np_tpos[0] = 0
+        #collision with right wall
+        if self.np_tpos[0] + self.size[0] > Window.width:
+            self.vel[0] = -self.vel[0]
+            self.np_tpos[0] = Window.width - self.size[0]
+        self.tpos = self.np_tpos
+        self.label.pos = self.tpos
+        return True
+    tpos = property(get_tpos, set_tpos)
 
     # cpos = property(get_cpos, set_cpos)
     # size = property(get_csize, set_csize)
+
+class ImprovDisplay(InstructionGroup):
+    def __init__(self,phrases,audio_cb=None):
+        super(ImprovDisplay, self).__init__()
+        self.phrases = phrases
+        self.objects = AnimGroup()
+        self.improv_word = ""
+        self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
+        self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
+        self.improv_labels = []
+        self.audio_cb = audio_cb
+        self.letter_buf = OrderedDict()
+        
+    def start(self):
+        self.add(self.user_input)
+        self.add(self.improvise)
+        self.add(self.objects)
+        self.create_hit_dict(self.phrases.keys())
+        tpos = [(100,400),(100,350),(100,300),(100,250)]
+        i = 0
+        for phrase in self.phrases:
+            letter_to_hit = self.letter_buf.keys()[i]
+            improv_label = ImprovPhrase(phrase,letter_to_hit,tpos[i],(1,1,1))
+            self.objects.add(improv_label)
+            self.improv_labels.append(improv_label)
+            i += 1
+
+    def restart(self):
+        self.remove(self.user_input)
+        self.remove(self.improvise)
+        self.remove(self.objects)
+        self.objects = AnimGroup()
+        self.improv_labels = []
+        self.improv_word = ""
+
+    def create_hit_dict(self,phrases):
+        for i in range(len(phrases)):
+            string = phrases[i]
+            for letter in string:
+                buf = self.letter_buf.get(letter,None)
+                if not buf:
+                    self.letter_buf[letter] = self.phrases[string]
+                    if len(phrases) == 1:
+                        return True
+                    else:
+                        res = self.create_hit_dict(phrases[i+1:])
+
+                    if not res:
+                        self.letter_buf.pop(letter)
+                    else:
+                        return True
+                else:
+                    continue
+
+            return False
+        return True
+
+
+    def on_hit(self,char):
+        buf = self.letter_buf.get(char,None)
+        if buf and self.audio_cb:
+            self.audio_cb(buf)
+        self.improv_word = ""
+        self.user_input.text = ""
+
+    def on_update(self):
+        self.objects.on_update()
+
 
 
 # Displays and controls all game elements: Nowbar, Buttons, BarLines, Gems.
@@ -694,7 +787,21 @@ class BeatMatchDisplay(InstructionGroup):
         self.start_pos = (20,Window.height+10)
         self.gem_data = gem_data
         self.objects = AnimGroup()
+        # self.add(PushMatrix(stack='projection_mat'))
+
+        # m1 = Matrix()
+        # scale_x = 1.5
+        # m1.set(array=[
+        #     [0.0025 * scale_x, 0.0, 0.0, 0.0],
+        #     [0.0, 0.003333, 1.0 / Window.height, 0.003333],
+        #     [0.0, 0.0, 1.0, 0.0],
+        #     [-1.0 * scale_x, -1.0, 1.0, 1.0]
+        # ])
+        # mi = ChangeState(projection_mat=m1)
+        # self.add(mi)
+
         self.add(self.objects)
+        # self.add(PopMatrix(stack='projection_mat'))
         self.game_paused = True
         self.game_started = False
         self.improv = False
@@ -756,12 +863,13 @@ class BeatMatchDisplay(InstructionGroup):
 # Handles game logic and keeps score.
 # Controls the display and the audio
 class Player(object):
-    def __init__(self, gem_data, display, audio_ctrl):
+    def __init__(self, gem_data, display, improv_display, audio_ctrl):
         super(Player, self).__init__()
         self.game_started = False
         self.game_paused = True
         self.audio_ctrl = audio_ctrl
         self.display = display
+        self.improv_display = improv_display
         self.gem_data = gem_data
         self.word_hits = 0
         self.gem_misses = 0
@@ -785,6 +893,7 @@ class Player(object):
     def restart_game(self):
         self.display.restart()
         self.audio_ctrl.start()
+        self.improv_display.restart()
         self.word_hits = 0
         self.longest_streak = 0
         self.game_paused = False
@@ -809,6 +918,9 @@ class Player(object):
 #                   print 'miss'
                    self.audio_ctrl.play_sfx()
                    self.audio_ctrl.set_mute(True)
+
+        elif not self.game_paused and self.improv:
+                self.improv_display.on_hit(char)
                    
 
 
@@ -823,5 +935,7 @@ class Player(object):
     def on_update(self):
         self.audio_ctrl.on_update()
         self.display.on_update()
+        if self.improv:
+            self.improv_display.on_update()
 
 run(MainWidget)

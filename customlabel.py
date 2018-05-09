@@ -11,6 +11,7 @@ from kivy.core.text.markup import MarkupLabel
 from kivy.utils import get_hex_from_color as to_hex
 from kivy.core.window import Window
 import re
+import numpy as np
 
 class CustomLabel(object):
     """
@@ -316,8 +317,7 @@ class BasicLabel(InstructionGroup):
     def __init__(self,text,tpos,**kwargs):
         super(BasicLabel, self).__init__()
         self.og_pos = tpos
-        text_size = (Window.width-tpos[0],None)
-        self.label = CustomLabel(text, text_size=text_size,**kwargs)
+        self.label = CustomLabel(text,**kwargs)
         self.rect = Rectangle(size=self.label.texture.size,pos=self.og_pos,texture=self.label.texture)
         self.max_size = self.label.texture.size
         self.tpos = tpos
@@ -343,6 +343,8 @@ class BasicLabel(InstructionGroup):
 
     # setter method for tpos of label. Allows for dynamic changes to the label
     def set_tpos(self, p):
+        if isinstance(p,np.ndarray):
+            p = tuple(p.tolist())
         self.pos = (p[0], p[1] - self.size[1])
         if p != self.pos:
             self.rect.pos = self.pos
