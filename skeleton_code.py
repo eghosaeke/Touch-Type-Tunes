@@ -570,53 +570,49 @@ def wrap_text(text,font_size,text_size):
 
 
 
-class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb):
-        super(LyricsPhrase, self).__init__()
-        self.text=text
-        self.text_to_type=text_to_type
-        self.end_of_lyric=False
-
+class LyricsWord(InstructionGroup):
+    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,interactive=False):
+        super(LyricsWord, self).__init__()
+        self.text = text
+        self.interactive = interactive
+        self.end_of_lyric = False
         self.pos = np.array(pos, dtype=np.float)
-        text_size = (Window.width/2.0-pos[0],None)
-        wrapped_text = wrap_text(text,17,text_size[0])
-        # print "wrap_text:\n", wrapped_text
-        
+        self.point_cb = point_cb
         if platform == "win":
-            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40,font_name="comic")
+            self.label = CustomLabel(text,color=color,halign=None,invert_text=True, font_size=40,font_name="comic")
         elif platform == "macosx":
-            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40,font_name="Microsoft Sans Serif")
+            self.label = CustomLabel(text,color=color,invert_text=True, font_size=40,font_name="Microsoft Sans Serif")
         else:
-            self.label = CustomLabel(wrapped_text,color=color,text_size=text_size,invert_text=True, font_size=40)
-        self.current=self.text.find(text_to_type)
+            self.label = CustomLabel(text,color=color,invert_text=True, font_size=40)
+
+        self.current=0
+        self.num_words = len(self.text.strip().split(" "))
         self.next_avail = self.text[self.current]
         self.start_time = start_t
         self.end_time = end_t
         self.scroll_t = self.end_time - self.start_time
         # self.scroll_t = 25
-        self.vel = -self.pos[1]/self.scroll_t
+        # self.vel = -self.pos[1]/self.scroll_t
+        self.vel = vel
         self.time = 0
-        self.queue_cb = queue_cb
         self.added_lyric = False
         self.on_screen = False
         # print "text to type: ",text_to_type
         # print "text: ",text
-        self.label.set_colors((0,.87,1,1),text_to_type)
+        if self.interactive:
+            self.label.set_colors((0,.87,1,1),text)
         # for i in range(len(self.label.text)):
         #     self.label.set_colors((0,0,0,0),"_")
 
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
 
-
-
-
-
     #Use self.label set_color() function to change color of text at an index 
-    def on_hit(self,letter_idx):
+    def on_hit(self):
+
         green=(0,1,0,1)
-        self.label.set_color(letter_idx,green)
-        self.label.set_bold(letter_idx+1)
+        self.label.set_color(self.current,green)
+        self.label.set_bold(self.current+1)
         new_text = self.label.texture
         self.rect.texture = new_text
         # self.add(self.rect)
@@ -624,18 +620,21 @@ class LyricsPhrase(InstructionGroup):
         try:
             self.next_avail=self.text[self.current]
             self.end_of_lyric=False
+            if self.next_avail == " ":
+                self.point_cb()
+            return False
         except Exception as e:
             self.end_of_lyric=True
+            return True
 #            print e
 #            print "END OF LYRIC"
 
 
     
 
-    def on_miss(self,letter_idx):
+    def on_miss(self):
         red=(1,0,0,1)
-        self.label.set_color(letter_idx,red)
-        # self.add(self.rect)
+        self.label.set_color(self.current,red)
 
     def on_update(self,dt):
         self.time += dt
@@ -649,6 +648,270 @@ class LyricsPhrase(InstructionGroup):
 
         if self.pos[1] < Window.height - self.rect.size[1]/2.0:
             self.on_screen = True
+
+        return self.time < self.end_time
+
+
+class LyricsPhrase(InstructionGroup):
+    def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb,point_cb):
+        super(LyricsPhrase, self).__init__()
+        self.text=text
+        self.text_to_type=text_to_type
+        self.end_of_lyric=False
+        self.color = color
+        self.objects = AnimGroup()
+        self.pos = np.array(pos, dtype=np.float)
+        self.text_size = (Window.width/2.0-pos[0],None)
+        
+        self.word_deque = deque()
+        self.start_time = start_t
+        self.end_time = end_t
+        self.scroll_t = self.end_time - self.start_time
+        # self.scroll_t = 25
+        self.vel = -self.pos[1]/self.scroll_t
+        self.point_cb = point_cb
+        self.create_phrases()
+        self.num_words = len(self.word_deque)
+        # print "len of interactive: ",self.num_words
+        # print "interactive in phrase: ",self.word_deque
+        self.current_word = self.word_deque[0]
+        self.time = 0
+        self.queue_cb = queue_cb
+        
+        self.added_lyric = False
+        self.on_screen = False
+        # print "text to type: ",text_to_type
+        # print "text: ",text
+        # for i in range(len(self.label.text)):
+        #     self.label.set_colors((0,0,0,0),"_")
+
+        self.add(self.objects)
+
+
+    def create_phrases(self):
+        wrapped_text = wrap_text(self.text,17,self.text_size[0])
+        phrases = self.text.split(self.text_to_type)
+        lines = wrapped_text.split("\n")
+        # print "phrases: ",phrases
+        # print "lines: ",lines
+        if len(lines) == 1:
+            phrases.insert(1,self.text_to_type)
+            size = (0,0)
+            prev_pos = self.pos
+            for phrase in phrases:
+                if phrase != '':
+                    interactive = phrase == self.text_to_type
+                    pos = (prev_pos[0]+size[0],prev_pos[1])
+                    word = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                    prev_pos = pos
+                    size = word.label.texture.size
+                    self.objects.add(word)
+                    if interactive:
+                        # print "word from og: ",phrase
+                        # print "ADDING TEXT TO TYPE ",phrase
+                        self.word_deque.append(word)
+        else:
+            i = 0
+            size = [0,0]
+            prev_size = [0,0]
+            prev_pos = self.pos
+            for l in range(len(lines)):
+                line = lines[l]
+                try:
+                    words = line.split(phrases[i])
+                    # print "split words: ",words
+                    split_work = True
+                except:
+                    words = [line]
+                    # print "split word except: ",words
+                    split_work = False
+
+
+                prev_pos = (self.pos[0],self.pos[1]+size[1])
+                size = [0,0]
+                for w in range(len(words)):
+                    word = words[w]
+                    # print "word: ",word
+                    if len(words) == 1 or (len(words) > 1 and word != ''):
+                        # print "split didn't work ",i
+                        ty_check = word.split(self.text_to_type)
+                        if all([x=='' for x in ty_check]):
+                            interactive = True
+
+                            # phrase = self.text_to_type
+                            int_phrases = self.text_to_type.split(" ")
+                            for p in range(len(int_phrases)):
+                                phrase = int_phrases[p]
+                                if p != len(int_phrases) - 1:
+                                    phrase += " " 
+                                pos = (prev_pos[0]+size[0],prev_pos[1])
+                                lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                                prev_pos = pos
+                                size = lword.label.texture.size
+                                self.objects.add(lword)
+                                if interactive:
+                                    # print "word from 1: ",word
+                                    # print "ADDING TEXT TO TYPE ",phrase
+                                    self.word_deque.append(lword)
+                        else:
+                            # print "Ty_check not all empty: ",ty_check
+                            end_line = False
+                            for ty in ty_check:
+                                if ty == '':
+                                    phrase = self.text_to_type
+                                else:
+                                    phrase = ty
+
+                                interactive = phrase == self.text_to_type
+                                if len(ty_check) == 1:
+                                    interactive = phrase in self.text_to_type
+                                    if interactive and w == len(words)-1:
+                                        # print "adding end of line space"
+                                        phrase += " "
+                                        end_line = True
+                                if interactive:
+                                    int_phrases = phrase.strip().split(" ")
+                                    for p in range(len(int_phrases)):
+                                        phrase = int_phrases[p]
+                                        if p != len(int_phrases) - 1 or end_line:
+                                            phrase += " "
+                                        pos = (prev_pos[0]+size[0],prev_pos[1])
+                                        lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                                        prev_pos = pos
+                                        size = lword.label.texture.size
+                                        self.objects.add(lword)
+                                        if interactive:
+                                            # print "word from 2: ",word
+                                            # print "ADDING TEXT TO TYPE ",phrase
+                                            self.word_deque.append(lword)
+                                else:
+                                    pos = (prev_pos[0]+size[0],prev_pos[1])
+                                    lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                                    prev_pos = pos
+                                    size = lword.label.texture.size
+                                    self.objects.add(lword)
+                        # phrase = word
+                        # interactive = phrase == self.text_to_type
+                        i = min(i+1,len(phrases)-1)
+                        # print "phrase[i]=%s" % phrases[i]
+                        # pos = (prev_pos[0]+size[0],prev_pos[1])
+                        # lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,interactive=interactive)
+                        # prev_pos = pos
+                        # size = lword.label.texture.size
+                        # self.objects.add(lword)
+                        # if interactive:
+                        #         print "ADDING TEXT TO TYPE ",phrase
+                        #         self.word_deque.append(lword)
+                    else:
+                        if word == '':
+                            interactive = False
+                            phrase = phrases[i]
+                            i = min(i+1,len(phrases)-1)
+                            pos = (prev_pos[0]+size[0],prev_pos[1])
+                            lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                            prev_pos = pos
+                            size = lword.label.texture.size
+                            self.objects.add(lword)
+                        # else:
+                        #     ty_check = word.split(self.text_to_type)
+                        #     if all([x=='' for x in ty_check]):
+                        #         interactive = True
+
+                        #         phrase = self.text_to_type
+                        #         int_phrases = phrase.split(" ")
+                        #         for p in range(len(int_phrases)):
+                        #             phrase = int_phrases[p]
+                        #             if p != len(int_phrases) - 1:
+                        #                     phrase += " "
+                        #             pos = (prev_pos[0]+size[0],prev_pos[1])
+                        #             lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                        #             prev_pos = pos
+                        #             size = lword.label.texture.size
+                        #             self.objects.add(lword)
+                        #             if interactive:
+                        #                 # print "word from 3: ",word
+                        #                 # print "ADDING TEXT TO TYPE ",phrase
+                        #                 self.word_deque.append(lword)
+                        #     else:
+                        #         # print "Ty_check not all empty: ",ty_check
+                        #         end_line = False
+                        #         for ty in ty_check:
+                        #             if ty == '':
+                        #                 phrase = self.text_to_type
+                        #             else:
+                        #                 phrase = ty
+
+                        #             interactive = phrase == self.text_to_type
+                        #             if len(ty_check) == 1:
+                        #                 interactive = phrase in self.text_to_type
+                        #                 if interactive and w == len(words)-1:
+                        #                     # print "adding end of line space"
+                        #                     phrase += " "
+                        #                     end_line = True
+                        #             if interactive:
+                        #                 int_phrases = phrase.strip().split(" ")
+                        #                 for p in range(len(int_phrases)):
+                        #                     phrase = int_phrases[p]
+                        #                     if p != len(int_phrases) - 1 or end_line:
+                        #                         phrase += " "
+                        #                     pos = (prev_pos[0]+size[0],prev_pos[1])
+                        #                     lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                        #                     prev_pos = pos
+                        #                     size = lword.label.texture.size
+                        #                     self.objects.add(lword)
+                        #                     if interactive:
+                        #                         # print "word from 4: ",word
+                        #                         # print "ADDING TEXT TO TYPE ",phrase
+                        #                         self.word_deque.append(lword)
+                        #             else:
+                        #                 pos = (prev_pos[0]+size[0],prev_pos[1])
+                        #                 lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+                        #                 prev_pos = pos
+                        #                 size = lword.label.texture.size
+                        #                 self.objects.add(lword)
+
+
+
+
+    #Use self.label set_color() function to change color of text at an index 
+    def on_hit(self,char):
+        green=(0,1,0,1)
+        if self.current_word.next_avail == char:
+            end = self.current_word.on_hit()
+            if end:
+                self.word_deque.popleft()
+                if len(self.word_deque) > 0:
+                    self.current_word = self.word_deque[0]
+        # self.add(self.rect)
+        if len(self.word_deque) == 0:
+            self.end_of_lyric = True
+            self.point_cb(end=True)
+            return True
+        else:
+            return False
+#            print e
+#            print "END OF LYRIC"
+
+
+    
+
+    def on_miss(self,char):
+        if self.current_word.next_avail != char:
+            self.current_word.on_miss()
+        # self.add(self.rect)
+
+    def on_update(self,dt):
+        self.time += dt
+        # epsilon = (self.start_time-self.time)
+        # if epsilon < 0.01:
+        #     if not self.added_lyric:
+        #         self.add(self.rect)
+        #         self.added_lyric = True
+        
+        self.objects.on_update()
+        if any([x.on_screen for x in self.objects.objects]):
+            self.on_screen = True
+        
         if self.time > self.end_time:
             self.queue_cb()
         # if self.pos[1] < 0:
@@ -787,6 +1050,7 @@ class BeatMatchDisplay(InstructionGroup):
         self.start_pos = (20,Window.height+10)
         self.gem_data = gem_data
         self.objects = AnimGroup()
+        self.score = 0
         # self.add(PushMatrix(stack='projection_mat'))
 
         # m1 = Matrix()
@@ -813,7 +1077,7 @@ class BeatMatchDisplay(InstructionGroup):
         for data in phrases:
             phrase,phrase_to_type,start,end = data
             # print "phrase to type: ",phrase_to_type
-            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,start,end,self.pop_lyric)
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,start,end,self.pop_lyric,self.add_points)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
         self.game_paused = False
@@ -826,17 +1090,30 @@ class BeatMatchDisplay(InstructionGroup):
             self.objects = AnimGroup()
             self.add(self.objects)
             self.lyrics_deque = deque()
+            self.score = 0
             self.start()
 
     def toggle(self):
         self.game_paused = not self.game_paused
         
     # called by Player. Causes the right thing to happen
-    def gem_hit(self, gem_idx):
-        pass
+    def letter_hit(self, char):
+        if self.curr_lyric.current_word.next_avail == char:
+            self.curr_lyric.on_hit(char)
+            return True
+        else:
+            self.curr_lyric.on_miss(char)
+            return False
 
+    def add_points(self,end=False):
+        self.score += 100
+        if end:
+            print "curr score: ",self.score
+            print "num words: ",self.curr_lyric.num_words
+            self.score += 100*self.curr_lyric.num_words
+            print "new score: ",self.score
     # called by Player. Causes the right thing to happen
-    def gem_pass(self, gem_idx):
+    def gem_pass(self):
         pass
 
     # called by Player. Causes the right thing to happen
@@ -871,7 +1148,7 @@ class Player(object):
         self.display = display
         self.improv_display = improv_display
         self.gem_data = gem_data
-        self.word_hits = 0
+        # self.word_hits = 0
         self.gem_misses = 0
         self.longest_streak = 0
         self.improv = False
@@ -894,7 +1171,7 @@ class Player(object):
         self.display.restart()
         self.audio_ctrl.start()
         self.improv_display.restart()
-        self.word_hits = 0
+        # self.word_hits = 0
         self.longest_streak = 0
         self.game_paused = False
 
@@ -905,25 +1182,22 @@ class Player(object):
             curr_lyric = self.display.curr_lyric
             if curr_lyric.on_screen:
 #                print curr_lyric.next_avail
-                if curr_lyric.next_avail == char:
-                    self.display.on_button_down(char,True)
-                    self.display.curr_lyric.on_hit(curr_lyric.current)
+                hit = self.display.letter_hit(char)
+                if hit:
                     self.audio_ctrl.set_mute(False)
-                    if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
-                        self.word_hits+=100
-                        # print self.word_hits, "SCORE"
+                # if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
+                #     self.word_hits+=100
+                #     # print self.word_hits, "SCORE"
 
                 else:
-                   self.display.curr_lyric.on_miss(curr_lyric.current) 
-#                   print 'miss'
                    self.audio_ctrl.play_sfx()
                    self.audio_ctrl.set_mute(True)
 
         elif not self.game_paused and self.improv:
                 self.improv_display.on_hit(char)
-                   
-
-
+    @property
+    def word_hits(self):
+        return self.display.score
         #self.display.on_button_down(char,False)
 
     # called by MainWidget

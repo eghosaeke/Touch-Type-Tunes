@@ -69,7 +69,7 @@ class CustomLabel(object):
     def parse_text(self,text,invert):
         fin_txt = ""
         if invert:
-            split_txt = text.strip().split("\n")
+            split_txt = text.split("\n")
             split_txt = split_txt[::-1]
             stitched = "\n".join(split_txt)
             return stitched
