@@ -790,18 +790,7 @@ class LyricsPhrase(InstructionGroup):
                                     prev_pos = pos
                                     size = lword.label.texture.size
                                     self.objects.add(lword)
-                        # phrase = word
-                        # interactive = phrase == self.text_to_type
                         i = min(i+1,len(phrases)-1)
-                        # print "phrase[i]=%s" % phrases[i]
-                        # pos = (prev_pos[0]+size[0],prev_pos[1])
-                        # lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,interactive=interactive)
-                        # prev_pos = pos
-                        # size = lword.label.texture.size
-                        # self.objects.add(lword)
-                        # if interactive:
-                        #         print "ADDING TEXT TO TYPE ",phrase
-                        #         self.word_deque.append(lword)
                     else:
                         if word == '':
                             interactive = False
@@ -812,65 +801,6 @@ class LyricsPhrase(InstructionGroup):
                             prev_pos = pos
                             size = lword.label.texture.size
                             self.objects.add(lword)
-                        # else:
-                        #     ty_check = word.split(self.text_to_type)
-                        #     if all([x=='' for x in ty_check]):
-                        #         interactive = True
-
-                        #         phrase = self.text_to_type
-                        #         int_phrases = phrase.split(" ")
-                        #         for p in range(len(int_phrases)):
-                        #             phrase = int_phrases[p]
-                        #             if p != len(int_phrases) - 1:
-                        #                     phrase += " "
-                        #             pos = (prev_pos[0]+size[0],prev_pos[1])
-                        #             lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
-                        #             prev_pos = pos
-                        #             size = lword.label.texture.size
-                        #             self.objects.add(lword)
-                        #             if interactive:
-                        #                 # print "word from 3: ",word
-                        #                 # print "ADDING TEXT TO TYPE ",phrase
-                        #                 self.word_deque.append(lword)
-                        #     else:
-                        #         # print "Ty_check not all empty: ",ty_check
-                        #         end_line = False
-                        #         for ty in ty_check:
-                        #             if ty == '':
-                        #                 phrase = self.text_to_type
-                        #             else:
-                        #                 phrase = ty
-
-                        #             interactive = phrase == self.text_to_type
-                        #             if len(ty_check) == 1:
-                        #                 interactive = phrase in self.text_to_type
-                        #                 if interactive and w == len(words)-1:
-                        #                     # print "adding end of line space"
-                        #                     phrase += " "
-                        #                     end_line = True
-                        #             if interactive:
-                        #                 int_phrases = phrase.strip().split(" ")
-                        #                 for p in range(len(int_phrases)):
-                        #                     phrase = int_phrases[p]
-                        #                     if p != len(int_phrases) - 1 or end_line:
-                        #                         phrase += " "
-                        #                     pos = (prev_pos[0]+size[0],prev_pos[1])
-                        #                     lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
-                        #                     prev_pos = pos
-                        #                     size = lword.label.texture.size
-                        #                     self.objects.add(lword)
-                        #                     if interactive:
-                        #                         # print "word from 4: ",word
-                        #                         # print "ADDING TEXT TO TYPE ",phrase
-                        #                         self.word_deque.append(lword)
-                        #             else:
-                        #                 pos = (prev_pos[0]+size[0],prev_pos[1])
-                        #                 lword = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
-                        #                 prev_pos = pos
-                        #                 size = lword.label.texture.size
-                        #                 self.objects.add(lword)
-
-
 
 
     #Use self.label set_color() function to change color of text at an index 
@@ -902,12 +832,6 @@ class LyricsPhrase(InstructionGroup):
 
     def on_update(self,dt):
         self.time += dt
-        # epsilon = (self.start_time-self.time)
-        # if epsilon < 0.01:
-        #     if not self.added_lyric:
-        #         self.add(self.rect)
-        #         self.added_lyric = True
-        
         self.objects.on_update()
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
