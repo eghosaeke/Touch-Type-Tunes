@@ -42,7 +42,7 @@ if os.name == "nt":
 elif os.name == "mac" or os.name == "posix":
     font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
-def score_label():
+def score_label(font_size):
     if platform == "macosx":        
         font_name= "Comic Sans MS"
     elif platform == "win":
@@ -50,7 +50,7 @@ def score_label():
     else:
         font_name = ""
 
-    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
+    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=font_size,font_name=font_name)
     return l
 
 
@@ -170,7 +170,7 @@ class MainWidget(BaseWidget):
         # self.canvas.add(PopMatrix())
             
             
-        self.score_label = score_label()
+        self.score_label = score_label(35)
         self.canvas.add(self.score_label)
         self.info = system_info_label()
         self.canvas.add(self.info)
@@ -338,10 +338,15 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
-        self.score_label.text = "Score"
-        self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
-        
-
+        if self.player.score_change ==True:
+            for i in range(len(self.score_label.label.text)):
+                self.score_label.label.set_size(i,40)
+                self.score_label.text = "Score"
+                self.score_label.text += "\n"+"{:,}".format(self.beat_disp.score)
+        else:
+            self.score_label.label.set_size(0,35)
+            self.score_label.text = "Score"
+            self.score_label.text += "\n"+"{:,}".format(self.beat_disp.score)
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
@@ -1096,6 +1101,7 @@ class BeatMatchDisplay(InstructionGroup):
             return False
 
     def add_points(self,end=False):
+        self.score_change=True
         self.score += 100
         if end:
             print "curr score: ",self.score
@@ -1121,6 +1127,7 @@ class BeatMatchDisplay(InstructionGroup):
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
+
         if not self.game_paused and not self.improv:
             self.objects.on_update()
         
@@ -1143,6 +1150,7 @@ class Player(object):
         self.gem_misses = 0
         self.longest_streak = 0
         self.improv = False
+        self.score_change=False
         
 
 
@@ -1176,13 +1184,15 @@ class Player(object):
                 hit = self.display.letter_hit(char)
                 if hit:
                     self.audio_ctrl.set_mute(False)
-                # if curr_lyric.next_avail == " " or curr_lyric.end_of_lyric==True:
-                #     self.word_hits+=100
-                #     # print self.word_hits, "SCORE"
+                    if char == " " or curr_lyric.end_of_lyric==True:
+                        self.score_change=True
+                    # self.word_hits+=100
+                    # print self.word_hits, "SCORE"
 
                 else:
-                   self.audio_ctrl.play_sfx()
-                   self.audio_ctrl.set_mute(True)
+                    self.score_change=False
+                    self.audio_ctrl.play_sfx()
+                    self.audio_ctrl.set_mute(True)
 
         elif not self.game_paused and self.improv:
                 self.improv_display.on_hit(char)
@@ -1194,6 +1204,7 @@ class Player(object):
     # called by MainWidget
     def on_button_up(self, char):
         if not self.game_paused and not self.improv:
+            self.score_change=False
             self.display.on_button_up(char)
 
     # needed to check if for pass gems (ie, went past the slop window)
