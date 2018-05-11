@@ -44,17 +44,23 @@ elif os.name == "mac" or os.name == "posix":
     font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
 
-def score_label():
-    if platform == "macosx":        
-        font_name= "Comic Sans MS"
-    elif platform == "win":
-        font_name = "comic"
-    else:
-        font_name = ""
 
-    l = BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=font_name)
-    return l
 
+class ScoreLabel(InstructionGroup):
+    def __init__(self):
+        super(ScoreLabel, self).__init__()
+        if platform == "macosx":        
+            self.font_name= "Comic Sans MS"
+        elif platform == "win":
+            self.font_name = "comic"
+        else:
+            self.font_name = ""
+        self.basic_label= BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=self.font_name)
+        self.add(self.basic_label)
+    
+    def on_update(self,dt):
+        self.time += dt
+        self.objects.on_update()
 
 
 def improv_label(text,tpos):
@@ -171,10 +177,10 @@ class MainWidget(BaseWidget):
         self.canvas.add(self.improv_obj)
         
         # self.canvas.add(PopMatrix())
-            
-            
-        self.score_label = score_label()
-        self.canvas.add(self.score_label)
+        self.score_label = ScoreLabel()
+        self.score_obj = AnimGroup()   
+        self.score_obj.add(self.score_label)
+        self.canvas.add(self.score_obj)
         self.info = system_info_label()
         self.canvas.add(self.info)
         self.particles = deque()
@@ -371,15 +377,14 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        self.score_label.basic_label.text = "Score"
         if self.player.score_change ==True:
-            self.score_label.text = "Score"
-            self.score_label.text += "\n"+"{:,}".format(self.player.score)
-            self.score_label.font_size = 40
+            self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+            self.score_label.basic_label.font_size = 40.5
         else:
-            
-            self.score_label.text = "Score"
-            self.score_label.text += "\n"+"{:,}".format(self.player.score)
-            self.score_label.font_size = 35
+            self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+            self.score_label.basic_label.font_size = 35
+
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
@@ -638,7 +643,6 @@ def wrap_text(text,font_size,text_size):
             i += 1
 
     return "\n".join([x.strip() for x in fin_txts])
-
 
 
 class LyricsWord(InstructionGroup):
