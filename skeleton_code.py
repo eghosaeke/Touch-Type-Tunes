@@ -134,11 +134,11 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-selected-milestone3_test.txt')
+        self.gem_data.read_data('Stems/Fetish-selected-milestone3-buffers-fixed.txt')
         self.gem_data.get_phrases()
         
         #Improv stuff
-        self.loopFilepath = 'Stems/improv/Fetish-improv-loops.txt'
+        self.loopFilepath = 'Stems/improv/Fetish-improv-loops-better.txt'
         self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
         self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
         
@@ -541,11 +541,6 @@ class SongData(object):
             #TODO: (maybe?) possible Designs:
             #1) Tag the improv section with a timestamp at the beginning/end (and return the times)
             #2) trigger the improv section when the word improv is dequed (find )
-            
-            #Don't put the improv words on display
-            if '\/' in word:
-                #TODO: 
-                continue
             
             if "." not in text:
                 if '*' in text:
@@ -1189,7 +1184,8 @@ class BeatMatchDisplay(InstructionGroup):
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
 
-        if not self.game_paused and not self.improv:
+#        if not self.game_paused and not self.improv:
+        if not self.game_paused:
             self.objects.on_update()
         
 
