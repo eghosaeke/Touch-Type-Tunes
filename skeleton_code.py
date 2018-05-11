@@ -177,7 +177,8 @@ class MainWidget(BaseWidget):
         self.canvas.add(self.score_label)
         self.info = system_info_label()
         self.canvas.add(self.info)
-        self.player = Player(self.gem_data,self.beat_disp,self.improv_obj,self.improv_disp,self.audio_cont)
+        self.particles = deque()
+        self.player = Player(self.gem_data,self.beat_disp,self.improv_obj,self.improv_disp,self.audio_cont,self.stop_ps)
         self.caps_on = False
         
         # test_text = "HELLO WOLRD"
@@ -334,16 +335,22 @@ class MainWidget(BaseWidget):
         ps.emitter_y = pos[1]
         ps.life_span = 0.4
         ps.life_span_variance = 0
+        ps.speed = 2000
 
         # color = color
         # rgb_color = hsv_to_rgb(*color)
         ps.start_color = [x for x in color]+[1.0]
         ps.end_color = [x for x in color]+[0.0]
         self.add_widget(ps)
+        self.particles.append(ps)
         ps.stop(True)
         ps.start(duration)
         # ps.stop(True)
 
+    def stop_ps(self):
+        if len(self.particles) > 0:
+            ps = self.particles.popleft()
+            ps.stop(True)
         
 
     def on_update(self) :
@@ -365,13 +372,14 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         if self.player.score_change ==True:
+            self.score_label.text = "Score"
+            self.score_label.text += "\n"+"{:,}".format(self.player.score)
             self.score_label.font_size = 40
-            self.score_label.text = "Score"
-            self.score_label.text += "\n"+"{:,}".format(self.player.score)
         else:
-            self.score_label.font_size = 35
+            
             self.score_label.text = "Score"
             self.score_label.text += "\n"+"{:,}".format(self.player.score)
+            self.score_label.font_size = 35
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
@@ -1185,7 +1193,7 @@ class BeatMatchDisplay(InstructionGroup):
 # Handles game logic and keeps score.
 # Controls the display and the audio
 class Player(object):
-    def __init__(self, gem_data, display, improv_group,improv_display, audio_ctrl):
+    def __init__(self, gem_data, display, improv_group,improv_display, audio_ctrl,stop_cb=None):
         super(Player, self).__init__()
         self.game_started = False
         self.game_paused = True
@@ -1194,7 +1202,7 @@ class Player(object):
         self.improv_display = improv_display
         self.improv_group = improv_group
         self.gem_data = gem_data
-        # self.word_hits = 0
+        self.particle_off = stop_cb
         self.gem_misses = 0
         self.longest_streak = 0
         self.improv = False
@@ -1254,6 +1262,8 @@ class Player(object):
         if not self.game_paused and not self.improv:
             self.score_change=False
             self.display.on_button_up(char)
+        elif not self.game_paused and self.improv:
+            self.particle_off()
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
