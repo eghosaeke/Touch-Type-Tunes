@@ -45,6 +45,7 @@ class CustomLabel(object):
         self.invert_text = invert_text
         self.text_dict = {i:text[i] for i in range(len(text))}
         self.og_text = text
+        self._font_size = font_size
         self.label_text = self.parse_text(text,invert_text)
         self.label = MarkupLabel(text=self.label_text,font_size=font_size,color=color,**kwargs)
         self.markup_regex = re.compile("(\[.+\])")
@@ -196,7 +197,7 @@ class CustomLabel(object):
 #            print e
             pass
 
-    def set_size(self,idx,fsize):
+    def set_size(self,idx,fsize,start=True,end=True):
         """
         Function to change the color of an individual character in the label
 
@@ -209,13 +210,22 @@ class CustomLabel(object):
         """
         try:
             old_text = self.text_dict[idx]
-            size_regex = re.compile("(\[size=\d\])")
+            if start:
+                size_regex = re.compile("(\[size=\d+\])")
+            else:
+                size_regex = re.compile("(\[/size\])")
             match = size_regex.search(old_text)
             if match:
-                new_text = re.sub('\d',fsize,old_text)
+                if start:
+                    new_text = re.sub('=\d+',"="+str(fsize),old_text)
             else:
                 markups = self.markup_regex.split(old_text)
-                new_text = ["[size=%d]" % fsize] + markups+ ["[/size]"]
+                if start and end:
+                    new_text = ["[size=%d]" % fsize] + markups + ["[/size]"]
+                elif start:
+                    new_text = ["[size=%d]" % fsize] + markups
+                elif end:
+                    new_text = markups + ["[/size]"]
                 new_text = "".join(new_text)
             self.text_dict[idx] = new_text
             render_text = self.join_text()
@@ -255,10 +265,13 @@ class CustomLabel(object):
             pass
 
     def get_fontsize(self):
-        return self.label.font_size
+        return self._font_size
 
     def set_fontsize(self,f):
-        self.label.font_size = f
+        low,high = min(self.text_dict),max(self.text_dict)
+        self.set_size(low,f,start=True,end=False)
+        self.set_size(high,f,start=False,end=True)
+        self._font_size = f
         self.label.refresh()
 
     def clear_markups(self,idx):
@@ -359,11 +372,13 @@ class BasicLabel(InstructionGroup):
             self.og_pos = p
 
     def get_fsize(self):
-        return self.label.label.font_size
+        return self.label.font_size
 
     def set_fsize(self,f):
         self.label.font_size = f
+        self.rect.size = self.label.texture.size
         self.rect.texture = self.label.texture
+        self.tpos = self.og_pos
 
     @property
     def size(self):

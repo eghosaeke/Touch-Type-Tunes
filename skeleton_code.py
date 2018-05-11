@@ -10,6 +10,7 @@ from common.mixer import *
 from common.wavegen import *
 from common.wavesrc import *
 from common.gfxutil import *
+from common.kivyparticle import ParticleSystem
 
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
@@ -136,7 +137,7 @@ class MainWidget(BaseWidget):
         self.marksHit = []
         
         self.improv = False 
-        self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf)
+        self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf,self.ps_cb)
         self.beat_disp = BeatMatchDisplay(self.gem_data,self.improv_disp.add_improv_word)
         
         with self.canvas.before:
@@ -177,8 +178,8 @@ class MainWidget(BaseWidget):
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
         # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
         # test_text += "\n\nPress 'r' to restart the game"
-        # self.hello = BasicLabel(test_text,tpos=(0,600),font_size=50,invert_text=False,font_name="DejaVuSans")
-        # self.hello = CustomLabel(test_text,font_size=40,font_name="DejaVuSans")
+        # self.hello = BasicLabel(test_text,tpos=(200,400),font_size=15,invert_text=False,font_name="DejaVuSans")
+        # self.hello = CustomLabel(test_text,font_size=15,font_name="DejaVuSans")
         # self.hello.set_color(6,(0,1,0))
         # # self.hello.set_bold(0)
         # self.hello.set_color(6,(0,0,1))
@@ -202,12 +203,14 @@ class MainWidget(BaseWidget):
         if keycode[1] == 'capslock':
             self.caps_on = not self.caps_on
 
+
+        # Used for testing and debugging
         if keycode[1] == 'tab':
             # self.hello.text += "\nHello World Again!"
-            # self.hello.set_font(6,"comic")
             
-            # self.rect.texture = self.hello.texture
             if "shift" in modifiers:
+                self.player.game_paused = False
+                self.player.improv = True
                 self.improv_disp.start()
             else:
 
@@ -315,11 +318,32 @@ class MainWidget(BaseWidget):
             self.beat_disp.improv = True
             self.audio_cont.improv = True
 
+    def ps_cb(self,pos,color,duration=0.2):
+        """
+        Add particle systems to screen on succesful event
+        """
+        ps = ParticleSystem('particle/particle.pex')
+        ps.emitter_x = pos[0]
+        ps.emitter_y = pos[1]
+        ps.life_span = 0.4
+        ps.life_span_variance = 0
+
+        # color = color
+        # rgb_color = hsv_to_rgb(*color)
+        ps.start_color = [x for x in color]+[1.0]
+        ps.end_color = [x for x in color]+[0.0]
+        self.add_widget(ps)
+        ps.stop(True)
+        ps.start(duration)
+        # ps.stop(True)
+
+        
+
     def on_update(self) :
         if kivyClock.get_fps() > 40:
             self.player.on_update()
 
-            # self.improv_obj.on_update()
+            self.improv_obj.on_update()
             # if not self.improv_disp.pre_started:
             #     self.improv_disp._scale = (self.improv_disp._scale[0]+0.001,self.improv_disp._scale[1]+0.001,0)
             #     self.improv_disp._trans = (self.improv_disp._trans[0]-5,self.improv_disp._trans[1]+0.1)
@@ -334,7 +358,7 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
         self.score_label.text = "Score"
-        self.score_label.text += "\n"+"{:,}".format(self.player.word_hits)
+        self.score_label.text += "\n"+"{:,}".format(self.player.score)
         
 
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
@@ -718,10 +742,6 @@ class LyricsPhrase(InstructionGroup):
         
         self.added_lyric = False
         self.on_screen = False
-        # print "text to type: ",text_to_type
-        # print "text: ",text
-        # for i in range(len(self.label.text)):
-        #     self.label.set_colors((0,0,0,0),"_")
 
         self.add(self.objects)
 
@@ -781,7 +801,8 @@ class LyricsPhrase(InstructionGroup):
                 elif i > start_ty and i < end_ty:
                     curr_phrase += glob_dict[i]
                     if s == len(line)-1:
-                        curr_phrase += glob_dict[i+1]
+                        if l < len(lines)-1:
+                            curr_phrase += " "
                         i += 1
                         self.create_word(curr_phrase,True)
                         curr_phrase = ""
@@ -901,7 +922,7 @@ class ImprovPhrase(InstructionGroup):
 
 
 class ImprovDisplay(InstructionGroup):
-    def __init__(self,phrases,audio_cb=None):
+    def __init__(self,phrases,audio_cb=None,ps_cb=None):
         super(ImprovDisplay, self).__init__()
         self.phrases = phrases
         self.add(PushMatrix())
@@ -918,6 +939,7 @@ class ImprovDisplay(InstructionGroup):
         self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
         self.improv_labels = []
         self.audio_cb = audio_cb
+        self.ps_cb = ps_cb
         self.letter_buf = OrderedDict()
         self.create_hit_dict(self.phrases.keys())
         self.pre_started = True
@@ -1012,6 +1034,9 @@ class ImprovDisplay(InstructionGroup):
         buf = self.letter_buf.get(char,None)
         if buf and self.audio_cb:
             self.audio_cb(buf)
+            if self.ps_cb:
+                print "ParticleSystem Callback"
+                self.ps_cb((400,300),(1,0,0,0.6))
         self.improv_word = ""
         self.user_input.text = ""
 
@@ -1204,7 +1229,7 @@ class Player(object):
         elif not self.game_paused and self.improv:
                 self.improv_display.on_hit(char)
     @property
-    def word_hits(self):
+    def score(self):
         return self.display.score
         #self.display.on_button_down(char,False)
 
