@@ -36,12 +36,6 @@ from customlabel import BasicLabel, CustomLabel
 from random import random, randint,choice
 
 
-
-if os.name == "nt": 
-    font_path = "C:\\Windows\\Fonts"
-elif os.name == "mac" or os.name == "posix":
-    font_paths = ["/System/Library/Fonts","Library/Fonts"]
-
 def score_label():
     if platform == "macosx":        
         font_name= "Comic Sans MS"
@@ -142,8 +136,9 @@ class MainWidget(BaseWidget):
         self.marksHit = []
         
         self.improv = False 
-        self.beat_disp = BeatMatchDisplay(self.gem_data)
         self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf)
+        self.beat_disp = BeatMatchDisplay(self.gem_data,self.improv_disp.add_improv_word)
+        
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
             self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
@@ -485,6 +480,7 @@ class SongData(object):
 
         phrase = ""
         phrase_to_type=""
+        improv_word = ""
         start_time = None
         end_time = None
         
@@ -506,10 +502,16 @@ class SongData(object):
             if "." not in text:
                 if '*' in text:
                     # phrase+= text[:-1]+"_"
-                    phrase+= text[:-1]+" "
+                    i = text.find("*")
+                    phrase+= text[:i]+" "
 
                     # phrase_to_type += text[:-1]+"_"
-                    phrase_to_type += text[:-1]+" "
+                    phrase_to_type += text[:i]+" "
+                    j = text.rfind("*")
+                    if i != j:
+                        improv_word = text[:i]
+
+
                 else:
                     # phrase += text + "_"
                     phrase += text + " "
@@ -531,10 +533,11 @@ class SongData(object):
                 
                 if not end_time:
                     end_time = float(start_sec)
-                    self.phrases_dict[phrase] = (phrase_to_type,start_time,end_time)
-                    self.phrases.append((phrase,phrase_to_type,start_time,end_time))
+                    self.phrases_dict[phrase] = (phrase_to_type,improv_word,start_time,end_time)
+                    self.phrases.append((phrase,phrase_to_type,improv_word,start_time,end_time))
                     phrase = ""
                     phrase_to_type=""
+                    improv_word = ""
                     start_time,end_time = None,None
             self.list.append((text,start_sec))
             self.all_words.append(text)
@@ -596,13 +599,14 @@ def wrap_text(text,font_size,text_size):
 
 
 class LyricsWord(InstructionGroup):
-    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,interactive=False):
+    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,improv_cb,interactive=False,improv=""):
         super(LyricsWord, self).__init__()
         self.text = text
         self.interactive = interactive
         self.end_of_lyric = False
         self.pos = np.array(pos, dtype=np.float)
         self.point_cb = point_cb
+        self.improv_cb = improv_cb
         if platform == "win":
             self.label = CustomLabel(text,color=color,halign=None,invert_text=True, font_size=40,font_name="comic")
         elif platform == "macosx":
@@ -622,9 +626,13 @@ class LyricsWord(InstructionGroup):
         self.time = 0
         self.added_lyric = False
         self.on_screen = False
+        self.improv_word = False
         # print "text to type: ",text_to_type
         # print "text: ",text
-        if self.interactive:
+        if improv == self.text.strip():
+            self.improv_word = True
+            self.label.set_colors((1,(215.0/255),0),text)
+        elif self.interactive:
             self.label.set_colors((0,.87,1,1),text)
         # for i in range(len(self.label.text)):
         #     self.label.set_colors((0,0,0,0),"_")
@@ -650,6 +658,9 @@ class LyricsWord(InstructionGroup):
             return False
         except Exception as e:
             self.end_of_lyric=True
+            if self.improv_word:
+                print "Callback:",self.improv_word
+                self.improv_cb(self.text.strip())
             return True
 #            print e
 #            print "END OF LYRIC"
@@ -678,10 +689,11 @@ class LyricsWord(InstructionGroup):
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,text_to_type,start_t,end_t,queue_cb,point_cb):
+    def __init__(self,pos,color,text,text_to_type,improv_word,start_t,end_t,queue_cb,point_cb,improv_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.text_to_type=text_to_type
+        self.improv_word = improv_word
         self.end_of_lyric=False
         self.color = color
         self.objects = AnimGroup()
@@ -695,6 +707,7 @@ class LyricsPhrase(InstructionGroup):
         # self.scroll_t = 25
         self.vel = -self.pos[1]/self.scroll_t
         self.point_cb = point_cb
+        self.improv_cb = improv_cb
         self.create_phrases()
         self.num_words = len(self.word_deque)
         # print "len of interactive: ",self.num_words
@@ -716,7 +729,7 @@ class LyricsPhrase(InstructionGroup):
         # print "curr_phrase: %s, line num: %d" % (curr_phrase,l)
         pos = (self.prev_pos[0]+self.size[0],self.prev_pos[1])
         # print "curr_phrase: %s, line num: %d" % (curr_phrase,l)
-        word = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,interactive=interactive)
+        word = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,self.improv_cb,interactive=interactive,improv=self.improv_word)
         self.prev_pos = pos
         self.size = word.label.texture.size
         self.objects.add(word)
@@ -985,12 +998,15 @@ class ImprovDisplay(InstructionGroup):
         return True
 
     def add_improv_word(self,word):
-        i = self.phrases.keys().index(word)
-        letter_to_hit = self.letter_buf.keys()[i]
-        improv_label = ImprovPhrase(word,letter_to_hit,self.tpos,(1,1,1))
-        self.objects.add(improv_label)
-        self.improv_labels.append(improv_label)
-        self.tpos = (self.tpos[0],self.tpos[1]-50)
+        try:
+            i = self.phrases.keys().index(word)
+            letter_to_hit = self.letter_buf.keys()[i]
+            improv_label = ImprovPhrase(word,letter_to_hit,self.tpos,(1,1,1))
+            self.objects.add(improv_label)
+            self.improv_labels.append(improv_label)
+            self.tpos = (self.tpos[0],self.tpos[1]-50)
+        except Exception as e:
+            print e
 
     def on_hit(self,char):
         buf = self.letter_buf.get(char,None)
@@ -1035,10 +1051,11 @@ class ImprovDisplay(InstructionGroup):
 
 # Displays and controls all game elements: Nowbar, Buttons, BarLines, Gems.
 class BeatMatchDisplay(InstructionGroup):
-    def __init__(self, gem_data):
+    def __init__(self, gem_data,improv_cb):
         super(BeatMatchDisplay, self).__init__()
         self.start_pos = (20,Window.height+10)
         self.gem_data = gem_data
+        self.improv_cb = improv_cb
         self.objects = AnimGroup()
         self.score = 0
         # self.add(PushMatrix(stack='projection_mat'))
@@ -1065,9 +1082,9 @@ class BeatMatchDisplay(InstructionGroup):
         phrases = self.gem_data.get_phrases_in_order()
         # print phrases
         for data in phrases:
-            phrase,phrase_to_type,start,end = data
+            phrase,phrase_to_type,improv_word,start,end = data
             print "phrase to type: ",phrase_to_type
-            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,start,end,self.pop_lyric,self.add_points)
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.improv_cb)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
         self.game_paused = False
