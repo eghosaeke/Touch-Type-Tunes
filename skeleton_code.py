@@ -849,14 +849,15 @@ class LyricsPhrase(InstructionGroup):
     #Use self.label set_color() function to change color of text at an index 
     def on_hit(self,char):
         green=(0,1,0,1)
-        if self.current_word.next_avail == char:
+        if self.current_word.next_avail == char and not self.end_of_lyric:
             end = self.current_word.on_hit()
             if end:
                 self.word_deque.popleft()
                 if len(self.word_deque) > 0:
+
                     self.current_word = self.word_deque[0]
         # self.add(self.rect)
-        if len(self.word_deque) == 0:
+        if len(self.word_deque) == 0 and not self.end_of_lyric:
             self.end_of_lyric = True
             self.point_cb(end=True)
             return True
