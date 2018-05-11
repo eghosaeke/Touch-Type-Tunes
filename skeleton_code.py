@@ -35,6 +35,7 @@ import re
 import textwrap
 from customlabel import BasicLabel, CustomLabel
 from random import random, randint,choice
+from copy import deepcopy
 
 
 
@@ -646,7 +647,7 @@ def wrap_text(text,font_size,text_size):
 
 
 class LyricsWord(InstructionGroup):
-    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,improv_cb,interactive=False,improv=""):
+    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,improv_cb,interactive=False,improv="",anim_cb=None):
         super(LyricsWord, self).__init__()
         self.text = text
         self.interactive = interactive
@@ -654,6 +655,7 @@ class LyricsWord(InstructionGroup):
         self.pos = np.array(pos, dtype=np.float)
         self.point_cb = point_cb
         self.improv_cb = improv_cb
+        self.color = color
         if platform == "win":
             self.label = CustomLabel(text,color=color,halign=None,invert_text=True, font_size=40,font_name="comic")
         elif platform == "macosx":
@@ -674,8 +676,11 @@ class LyricsWord(InstructionGroup):
         self.added_lyric = False
         self.on_screen = False
         self.improv_word = False
+        self.anim_cb = anim_cb
+        self.flying = False
         # print "text to type: ",text_to_type
         # print "text: ",text
+        self.improv = improv
         if improv == self.text.strip():
             self.improv_word = True
             self.label.set_colors((1,(215.0/255),0),text)
@@ -707,36 +712,71 @@ class LyricsWord(InstructionGroup):
             self.end_of_lyric=True
             if self.improv_word:
                 print "Callback:",self.improv_word
+                if self.anim_cb:
+                    copy_word = self.copy()
+                    
+                    copy_word.fly()
+                    self.anim_cb(copy_word)
+                    print "finish copy"
                 self.improv_cb(self.text.strip())
             return True
 #            print e
 #            print "END OF LYRIC"
 
 
-    
+    def copy(self):
+        label_copy = self.label.copy()
+        new_word = LyricsWord(self.pos.copy(),self.color,self.text,self.start_time,self.end_time,self.vel,self.point_cb,self.improv_cb,interactive=self.interactive,improv=self.improv)
+        new_word.label = label_copy
+        new_word.rect.texture = label_copy.texture
+        return new_word
 
     def on_miss(self):
         red=(1,0,0,1)
         self.label.set_color(self.current,red)
 
+    def fly(self):
+        print "calling fly function"
+        x = np.array([self.pos[0],Window.width*0.75])
+        y = np.array([self.pos[1],Window.height*0.2])
+        t = np.array([0,1])
+        self.anim = zip(t,x,y)
+        self.flying_anim = KFAnim(*self.anim)
+        self.time = 0
+        self.flying = True
+        self.add(self.rect)
+        self.on_update(0)
+
+
     def on_update(self,dt):
-        self.time += dt
-        epsilon = (self.start_time-self.time)
-        if epsilon < 0.01:
-            if not self.added_lyric:
-                self.add(self.rect)
-                self.added_lyric = True
-            self.pos[1] += self.vel * dt
-            self.rect.pos = self.pos
+        if self.flying:
+            # print "should be animating"
+            x,y = self.flying_anim.eval(self.time)
+            pos = (x,y)
+            self.pos = np.array(pos)
+            # print "new pos: ",pos
+            self.rect.pos = pos
+            self.time += dt
+            
+            return self.flying_anim.is_active(self.time)
+        else:
+            self.time += dt
+            epsilon = (self.start_time-self.time)
+            if epsilon < 0.01:
+                if not self.added_lyric:
+                    self.add(self.rect)
+                    self.added_lyric = True
+                self.pos[1] += self.vel * dt
+                self.rect.pos = self.pos
 
-        if self.pos[1] < Window.height - self.rect.size[1]/2.0:
-            self.on_screen = True
+            if self.pos[1] < Window.height - self.rect.size[1]/2.0:
+                self.on_screen = True
 
-        return self.time < self.end_time
+            return self.time < self.end_time
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,text_to_type,improv_word,start_t,end_t,queue_cb,point_cb,improv_cb):
+    def __init__(self,pos,color,text,text_to_type,improv_word,start_t,end_t,queue_cb,point_cb,improv_cb,anim_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.text_to_type=text_to_type
@@ -755,6 +795,7 @@ class LyricsPhrase(InstructionGroup):
         self.vel = -self.pos[1]/self.scroll_t
         self.point_cb = point_cb
         self.improv_cb = improv_cb
+        self.anim_cb = anim_cb
         self.create_phrases()
         self.num_words = len(self.word_deque)
         # print "len of interactive: ",self.num_words
@@ -778,6 +819,7 @@ class LyricsPhrase(InstructionGroup):
         self.objects.add(word)
         if interactive:
             self.word_deque.append(word)
+            word.anim_cb = self.anim_cb
 
 
     def create_phrases(self):
@@ -1133,7 +1175,8 @@ class BeatMatchDisplay(InstructionGroup):
         for data in phrases:
             phrase,phrase_to_type,improv_word,start,end = data
             print "phrase to type: ",phrase_to_type
-            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.improv_cb)
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.improv_cb,
+                                    self.fly_cb)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
         self.game_paused = False
@@ -1165,10 +1208,10 @@ class BeatMatchDisplay(InstructionGroup):
         self.score_change=True
         self.score += 100
         if end:
-            print "curr score: ",self.score
-            print "num words: ",self.curr_lyric.num_words
             self.score += 100*self.curr_lyric.num_words
-            print "new score: ",self.score
+
+    def fly_cb(self,word):
+        self.objects.add(word)
     # called by Player. Causes the right thing to happen
     def gem_pass(self):
         pass

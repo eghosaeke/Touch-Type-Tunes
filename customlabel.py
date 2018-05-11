@@ -12,7 +12,7 @@ from kivy.utils import get_hex_from_color as to_hex
 from kivy.core.window import Window
 import re
 import numpy as np
-
+from copy import deepcopy
 class CustomLabel(object):
     """
     Class to encapsulate CoreLabel() and MarkupLabel() for more text editing
@@ -42,16 +42,24 @@ class CustomLabel(object):
         super(CustomLabel, self).__init__()
         if len(color) == 3:
             color = [c for c in color]+[1]
+        self.color = color
         self.invert_text = invert_text
         self.text_dict = {i:text[i] for i in range(len(text))}
         self.og_text = text
         self._font_size = font_size
+        self.kwargs = kwargs
         self.label_text = self.parse_text(text,invert_text)
         self.label = MarkupLabel(text=self.label_text,font_size=font_size,color=color,**kwargs)
         self.markup_regex = re.compile("(\[.+\])")
         self.def_regex = re.compile("(\[/*(color(=#\w+)*|b|i)\])")
         
         self.label.refresh()
+
+    def copy(self):
+        new_label = CustomLabel(self.og_text,self._font_size,self.color,invert_text=self.invert_text,**self.kwargs)
+        new_label.text_dict = self.text_dict
+        new_label.text = self.join_text()
+        return new_label
 
     # Get the current text of the label
     def get_text(self):
