@@ -333,28 +333,29 @@ class MainWidget(BaseWidget):
             self.beat_disp.improv = True
             self.audio_cont.improv = True
 
-    def ps_cb(self,pos,color,duration=0.2):
+    def ps_cb(self,pos,color,duration=1.0):
         """
         Add particle systems to screen on succesful event
         """
         ps = ParticleSystem('particle/particle.pex')
         ps.emitter_x = pos[0]
         ps.emitter_y = pos[1]
-        ps.life_span = 0.4
+        ps.life_span = 10
         ps.life_span_variance = 0
-        ps.speed = 2000
-
+        # ps.speed = 500
         # color = color
         # rgb_color = hsv_to_rgb(*color)
         ps.start_color = [x for x in color]+[1.0]
-        ps.end_color = [x for x in color]+[0.0]
+        ps.end_color = [x for x in color]+[1.0]
         self.add_widget(ps)
         self.particles.append(ps)
         ps.stop(True)
-        ps.start(duration)
+        ps.start()
+
+        kivyClock.schedule_once(self.stop_ps,duration)
         # ps.stop(True)
 
-    def stop_ps(self):
+    def stop_ps(self,dt):
         if len(self.particles) > 0:
             ps = self.particles.popleft()
             ps.stop(True)
@@ -713,7 +714,7 @@ class LyricsWord(InstructionGroup):
                     copy_word.fly()
                     self.anim_cb(copy_word)
                     print "finish copy"
-                self.improv_cb(self.text.strip())
+                
             return True
 #            print e
 #            print "END OF LYRIC"
@@ -732,8 +733,8 @@ class LyricsWord(InstructionGroup):
 
     def fly(self):
         print "calling fly function"
-        x = np.array([self.pos[0],Window.width*0.75])
-        y = np.array([self.pos[1],Window.height*0.2])
+        x = np.array([self.pos[0],Window.width*0.6])
+        y = np.array([self.pos[1],Window.height*0.25])
         t = np.array([0,1])
         self.anim = zip(t,x,y)
         self.flying_anim = KFAnim(*self.anim)
@@ -752,7 +753,8 @@ class LyricsWord(InstructionGroup):
             # print "new pos: ",pos
             self.rect.pos = pos
             self.time += dt
-            
+            if not self.flying_anim.is_active(self.time):
+                self.improv_cb(self.text.strip())
             return self.flying_anim.is_active(self.time)
         else:
             self.time += dt
@@ -998,7 +1000,7 @@ class ImprovDisplay(InstructionGroup):
         self.improv_word = ""
         self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
         self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
-        self.improv_labels = []
+        self.improv_labels = {}
         self.audio_cb = audio_cb
         self.ps_cb = ps_cb
         self.letter_buf = OrderedDict()
@@ -1055,7 +1057,7 @@ class ImprovDisplay(InstructionGroup):
         self.remove(self.improvise)
         self.remove(self.objects)
         self.objects = AnimGroup()
-        self.improv_labels = []
+        self.improv_labels = {}
         self.improv_word = ""
 
     def create_hit_dict(self,phrases):
@@ -1086,18 +1088,18 @@ class ImprovDisplay(InstructionGroup):
             letter_to_hit = self.letter_buf.keys()[i]
             improv_label = ImprovPhrase(word,letter_to_hit,self.tpos,(1,1,1))
             self.objects.add(improv_label)
-            self.improv_labels.append(improv_label)
+            self.improv_labels[letter_to_hit] = improv_label
             self.tpos = (self.tpos[0],self.tpos[1]-50)
         except Exception as e:
             print e
 
     def on_hit(self,char):
         buf = self.letter_buf.get(char,None)
-        if buf and self.audio_cb:
+        word = self.improv_labels.get(char,None)
+        if buf and word and self.audio_cb:
             self.audio_cb(buf)
             if self.ps_cb:
-                print "ParticleSystem Callback"
-                self.ps_cb((400,300),(1,0,0,0.6))
+                self.ps_cb(word.tpos,(1,0,0,0.6))
         self.improv_word = ""
         self.user_input.text = ""
 
@@ -1307,7 +1309,7 @@ class Player(object):
             self.score_change=False
             self.display.on_button_up(char)
         elif not self.game_paused and self.improv:
-            self.particle_off()
+            pass
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
