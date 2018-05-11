@@ -254,6 +254,13 @@ class CustomLabel(object):
 #            print e
             pass
 
+    def get_fontsize(self):
+        return self.label.font_size
+
+    def set_fontsize(self,f):
+        self.label.font_size = f
+        self.label.refresh()
+
     def clear_markups(self,idx):
         """
         Function to clear all markups currently affecting a character at idx
@@ -294,6 +301,7 @@ class CustomLabel(object):
             return stitched
 
     text = property(get_text,set_text)
+    font_size = property(get_fontsize,set_fontsize)
 
     @property
     def texture(self):
@@ -350,10 +358,18 @@ class BasicLabel(InstructionGroup):
             self.rect.pos = self.pos
             self.og_pos = p
 
+    def get_fsize(self):
+        return self.label.label.font_size
+
+    def set_fsize(self,f):
+        self.label.font_size = f
+        self.rect.texture = self.label.texture
+
     @property
     def size(self):
         return max(self.label.texture.size,self.max_size)
 
     text = property(get_text,set_text)
     tpos = property(get_tpos, set_tpos)
+    font_size = property(get_fsize,set_fsize)
 
