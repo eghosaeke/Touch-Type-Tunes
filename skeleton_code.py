@@ -708,13 +708,11 @@ class LyricsWord(InstructionGroup):
         except Exception as e:
             self.end_of_lyric=True
             if self.improv_word:
-                print "Callback:",self.improv_word
                 if self.anim_cb:
                     copy_word = self.copy()
                     
                     copy_word.fly()
                     self.anim_cb(copy_word)
-                    print "finish copy"
                 
             return True
 #            print e
@@ -733,7 +731,6 @@ class LyricsWord(InstructionGroup):
         self.label.set_color(self.current,red)
 
     def fly(self):
-        print "calling fly function"
         x = np.array([self.pos[0],Window.width*0.6])
         y = np.array([self.pos[1],Window.height*0.25])
         t = np.array([0,0.5])
@@ -1170,7 +1167,6 @@ class BeatMatchDisplay(InstructionGroup):
         # print phrases
         for data in phrases:
             phrase,phrase_to_type,improv_word,start,end = data
-            print "phrase to type: ",phrase_to_type
             lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.improv_cb,
                                     self.fly_cb)
             self.objects.add(lyric)
