@@ -690,6 +690,7 @@ class LyricsWord(InstructionGroup):
 
         self.added_lyric = False
         self.on_screen = False
+        self.below_screen = False
         self.improv_word = False
         self.anim_cb = anim_cb
         self.flying = False
@@ -824,6 +825,8 @@ class LyricsWord(InstructionGroup):
 
             if self.pos[1] < Window.height - self.rect.size[1]/2.0:
                 self.on_screen = True
+            if self.pos[1] < 0 :
+                self.below_screen = True
 
             if self.pulsing_char:
                 char_size= self.char_anim.eval(self.char_time[self.anim_idx])
@@ -890,6 +893,7 @@ class LyricsPhrase(InstructionGroup):
         
         self.added_lyric = False
         self.on_screen = False
+        self.below_screen = False
 
         self.add(self.objects)
 
@@ -1008,6 +1012,8 @@ class LyricsPhrase(InstructionGroup):
         self.objects.on_update()
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
+        if any([x.below_screen for x in self.objects.objects]):
+            self.below_screen = True
         
         if self.time > self.end_time:
             self.queue_cb()
@@ -1383,6 +1389,7 @@ class Player(object):
                     self.audio_ctrl.play_sfx()
                     self.audio_ctrl.set_mute(True)
 
+
         elif not self.game_paused and self.improv:
                 self.improv_display.on_hit(char)
     @property
@@ -1404,5 +1411,13 @@ class Player(object):
         self.display.on_update()
         if self.improv:
             self.improv_group.on_update()
+        print self.display.curr_lyric.below_screen
+        if self.display.curr_lyric.below_screen:
+            if not self.display.curr_lyric.end_of_lyric:
+
+                self.audio_ctrl.play_sfx()
+                self.audio_ctrl.set_mute(True)
+
+
 
 run(MainWidget)
