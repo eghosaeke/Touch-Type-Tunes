@@ -686,12 +686,15 @@ class LyricsWord(InstructionGroup):
         self.vel = vel
         self.time = 0
         self.pulse_time=0
+        self.char_time={}
+
         self.added_lyric = False
         self.on_screen = False
         self.improv_word = False
         self.anim_cb = anim_cb
         self.flying = False
         self.pulsing = False
+        self.pulsing_char= False
         self.start_size=40
         # print "text to type: ",text_to_type
         # print "text: ",text
@@ -717,18 +720,24 @@ class LyricsWord(InstructionGroup):
         self.rect.texture = new_text
         self.rect.size=self.label.texture.size
 
+        self.pulse_char(self.current)
+
+        
+
         # self.add(self.rect)
         
+        
         self.current += 1
-
 
         try:
             self.next_avail=self.text[self.current]
             self.end_of_lyric=False
+            
             if self.next_avail == " ":
                 self.point_cb()
                 self.pulse_word()
                 self.rect.size=self.label.texture.size
+                self.rect.texture=self.label.texture
             return False
         except Exception as e:
             self.end_of_lyric=True
@@ -769,12 +778,22 @@ class LyricsWord(InstructionGroup):
         self.add(self.rect)
 
     def pulse_word(self):
-        start_size = self.label.get_fontsize()        
-        end_size = self.label.get_fontsize() + 4
+        start_size = 40
+        end_size =50
         self.pulse_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
         self.pulse_time = 0
         self.pulsing = True
         self.rect.size=self.label.texture.size
+
+    def pulse_char(self,idx):
+        start_size = 40     
+        end_size = 50
+        self.char_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
+        self.char_time[idx]=0
+        self.pulsing_char = True
+        self.rect.size=self.label.texture.size
+        self.anim_idx=idx
+        
 
 
     def on_update(self,dt):
@@ -792,6 +811,8 @@ class LyricsWord(InstructionGroup):
         else:
             self.time += dt
             self.pulse_time+=dt
+            for i in range(len(self.char_time)):
+                self.char_time[i]+=dt
             epsilon = (self.start_time-self.time)
             if epsilon < 0.01:
                 if not self.added_lyric:
@@ -804,16 +825,32 @@ class LyricsWord(InstructionGroup):
             if self.pos[1] < Window.height - self.rect.size[1]/2.0:
                 self.on_screen = True
 
+            if self.pulsing_char:
+                char_size= self.char_anim.eval(self.char_time[self.anim_idx])
+                self.label.set_size(self.anim_idx,int(char_size))
+                self.rect.size=self.label.texture.size
+                self.rect.texture=self.label.texture
+
+                
+
+
             if self.pulsing:
                 new_size= self.pulse_anim.eval(self.pulse_time)
-                if new_size > 0:
-                    self.label.set_fontsize(int(new_size))
-                    self.rect.size=self.label.texture.size
+                self.label.set_fontsize(int(new_size))
+                self.rect.size=self.label.texture.size
+                self.rect.texture=self.label.texture
                     
                 if not self.pulse_anim.is_active(self.pulse_time):
                     self.pulsing = False
                     self.label.set_fontsize(self.start_size)
                     self.rect.size=self.label.texture.size
+                    self.rect.texture=self.label.texture
+
+                    for i in range(len(self.char_time)):
+                        if not self.char_anim.is_active(self.char_time[i]):
+                            self.label.set_size(i,40)
+                            self.rect.size=self.label.texture.size
+                            self.rect.texture=self.label.texture
 
 
             
@@ -969,7 +1006,6 @@ class LyricsPhrase(InstructionGroup):
 
         self.time += dt
         self.objects.on_update()
-        print self.size
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
         
