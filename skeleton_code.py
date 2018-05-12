@@ -43,10 +43,10 @@ from copy import deepcopy
 if os.name == "nt": 
     font_path = "C:\\Windows\\Fonts"
 elif os.name == "mac" or os.name == "posix":
-    font_paths = ["/System/Library/Fonts","Library/Fonts"]
+    font_path = ["/System/Library/Fonts","/Library/Fonts"]
 
 
-font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path[1]))
 # print font_files
 
 class ScoreLabel(InstructionGroup):
@@ -69,8 +69,6 @@ class ScoreLabel(InstructionGroup):
 
     
     def on_update(self,dt):
-        
-
         new_size = self.size_anim.eval(self.time)
         self.basic_label.font_size=new_size
         self.time += dt
@@ -779,11 +777,14 @@ class LyricsWord(InstructionGroup):
         # self.vel = -self.pos[1]/self.scroll_t
         self.vel = vel
         self.time = 0
+        self.pulse_time=0
         self.added_lyric = False
         self.on_screen = False
         self.improv_word = False
         self.anim_cb = anim_cb
         self.flying = False
+        self.pulsing = False
+        self.start_size=40
         # print "text to type: ",text_to_type
         # print "text: ",text
         self.improv = improv
@@ -794,7 +795,7 @@ class LyricsWord(InstructionGroup):
             self.label.set_colors((0,.87,1,1),text)
         # for i in range(len(self.label.text)):
         #     self.label.set_colors((0,0,0,0),"_")
-
+        
         self.rect = Rectangle(size=self.label.texture.size,pos=pos,texture=self.label.texture)
 
 
@@ -806,16 +807,25 @@ class LyricsWord(InstructionGroup):
         self.label.set_bold(self.current+1)
         new_text = self.label.texture
         self.rect.texture = new_text
+        self.rect.size=self.label.texture.size
+
         # self.add(self.rect)
+        
         self.current += 1
+
+
         try:
             self.next_avail=self.text[self.current]
             self.end_of_lyric=False
             if self.next_avail == " ":
                 self.point_cb()
+                self.pulse_word()
+                self.rect.size=self.label.texture.size
             return False
         except Exception as e:
             self.end_of_lyric=True
+            self.pulse_word()
+            self.rect.size=self.label.texture.size
             if self.improv_word:
                 if self.anim_cb:
                     copy_word = self.copy()
@@ -847,7 +857,16 @@ class LyricsWord(InstructionGroup):
         self.flying_anim = KFAnim(*self.anim)
         self.time = 0
         self.flying = True
+        self.rect.size=self.label.texture.size
         self.add(self.rect)
+
+    def pulse_word(self):
+        start_size = self.label.get_fontsize()        
+        end_size = self.label.get_fontsize() + 4
+        self.pulse_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
+        self.pulse_time = 0
+        self.pulsing = True
+        self.rect.size=self.label.texture.size
 
 
     def on_update(self,dt):
@@ -864,6 +883,7 @@ class LyricsWord(InstructionGroup):
             return self.flying_anim.is_active(self.time)
         else:
             self.time += dt
+            self.pulse_time+=dt
             epsilon = (self.start_time-self.time)
             if epsilon < 0.01:
                 if not self.added_lyric:
@@ -872,10 +892,26 @@ class LyricsWord(InstructionGroup):
                 self.pos[1] += self.vel * dt
                 self.rect.pos = self.pos
 
+
             if self.pos[1] < Window.height - self.rect.size[1]/2.0:
                 self.on_screen = True
 
+            if self.pulsing:
+                new_size= self.pulse_anim.eval(self.pulse_time)
+                if new_size > 0:
+                    self.label.set_fontsize(int(new_size))
+                    self.rect.size=self.label.texture.size
+                    
+                if not self.pulse_anim.is_active(self.pulse_time):
+                    self.pulsing = False
+                    self.label.set_fontsize(self.start_size)
+                    self.rect.size=self.label.texture.size
+
+
+            
             return self.time < self.end_time
+
+        
 
 
 class LyricsPhrase(InstructionGroup):
@@ -1006,6 +1042,7 @@ class LyricsPhrase(InstructionGroup):
         if len(self.word_deque) == 0 and not self.end_of_lyric:
             self.end_of_lyric = True
             self.point_cb(end=True)
+
             return True
         else:
             return False
@@ -1021,8 +1058,10 @@ class LyricsPhrase(InstructionGroup):
         # self.add(self.rect)
 
     def on_update(self,dt):
+
         self.time += dt
         self.objects.on_update()
+        print self.size
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
         
