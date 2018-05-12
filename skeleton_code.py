@@ -45,7 +45,8 @@ elif os.name == "mac" or os.name == "posix":
     font_paths = ["/System/Library/Fonts","Library/Fonts"]
 
 
-
+font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path))
+# print font_files
 
 class ScoreLabel(InstructionGroup):
     def __init__(self):
@@ -653,7 +654,7 @@ class LyricsWord(InstructionGroup):
         self.improv_cb = improv_cb
         self.color = color
         if platform == "win":
-            self.label = CustomLabel(text,color=color,halign=None,invert_text=True, font_size=40,font_name="comic")
+            self.label = CustomLabel(text,color=color,halign=None,invert_text=False, font_size=40,font_name="comic")
         elif platform == "macosx":
             self.label = CustomLabel(text,color=color,invert_text=True, font_size=40,font_name="Microsoft Sans Serif")
         else:
@@ -735,7 +736,7 @@ class LyricsWord(InstructionGroup):
         print "calling fly function"
         x = np.array([self.pos[0],Window.width*0.6])
         y = np.array([self.pos[1],Window.height*0.25])
-        t = np.array([0,1])
+        t = np.array([0,0.5])
         self.anim = zip(t,x,y)
         self.flying_anim = KFAnim(*self.anim)
         self.time = 0
@@ -843,7 +844,8 @@ class LyricsPhrase(InstructionGroup):
         self.prev_pos = self.pos
         for l in range(len(lines)):
             line = lines[l]
-            self.prev_pos = (self.pos[0],self.pos[1]+(l*self.size[1]))
+            ### Change - to + to invert text ###
+            self.prev_pos = (self.pos[0],self.pos[1]-(l*self.size[1]))
             self.size = [0,0]
             for s in range(len(line)):
                 char = line[s]
@@ -1105,15 +1107,12 @@ class ImprovDisplay(InstructionGroup):
 
     def on_update(self,dt):
         if not self.pre_started:
-            # print "Animation Group"
-            # if self.scale_anim.is_active(self.time):
             x,y,z = self.scale_anim.eval(self.time)
             dx,dy = self.trans_anim.eval(self.time)
             self._trans = (dx,dy)
             self._scale = (x,y,z)
             self.time += dt
             
-            #     self.remove(self.scale)
             if not self.scale_anim.is_active(self.time):
                 self.objects.on_update()
         return True
