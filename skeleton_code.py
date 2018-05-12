@@ -135,7 +135,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-selected-milestone3-buffers-fixed.txt')
+        self.gem_data.read_data('Stems/Fetish-selected-milestone3-buffers-fixed-full-improv.txt')
         self.gem_data.get_phrases()
         
         #Improv stuff
