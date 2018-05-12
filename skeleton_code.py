@@ -57,12 +57,24 @@ class ScoreLabel(InstructionGroup):
             self.font_name = "comic"
         else:
             self.font_name = ""
-        self.basic_label= BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=35,font_name=self.font_name)
-        self.add(self.basic_label)
+        self.time=0
+        self.objects=AnimGroup()
+        self.start_size =30
+        self.end_size = 50
+        self.basic_label= BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=self.start_size,font_name=self.font_name)
+        self.objects.add(self.basic_label)
+        self.add(self.objects)
+        self.size_anim = KFAnim((0, self.start_size),(.25, self.end_size),(.5, self.start_size))
+
     
     def on_update(self,dt):
+        
+
+        new_size = self.size_anim.eval(self.time)
+        self.basic_label.font_size=new_size
         self.time += dt
-        self.objects.on_update()
+        return self.size_anim.is_active(self.time)
+
 
 
 def improv_label(text,tpos):
@@ -366,7 +378,7 @@ class MainWidget(BaseWidget):
         if kivyClock.get_fps() > 40:
             self.player.on_update()
 
-            self.improv_obj.on_update()
+            
             # if not self.improv_disp.pre_started:
             #     self.improv_disp._scale = (self.improv_disp._scale[0]+0.001,self.improv_disp._scale[1]+0.001,0)
             #     self.improv_disp._trans = (self.improv_disp._trans[0]-5,self.improv_disp._trans[1]+0.1)
@@ -380,13 +392,15 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        self.improv_obj.on_update()
         self.score_label.basic_label.text = "Score"
+        self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+            # self.score_label.basic_label.font_size = 40.5
         if self.player.score_change ==True:
-            self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
-            self.score_label.basic_label.font_size = 40.5
-        else:
-            self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
-            self.score_label.basic_label.font_size = 35
+            self.score_obj.on_update()
+        # else:
+        #     self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+        #     self.score_label.basic_label.font_size = 35
 
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
@@ -739,7 +753,6 @@ class LyricsWord(InstructionGroup):
         self.time = 0
         self.flying = True
         self.add(self.rect)
-        self.on_update(0)
 
 
     def on_update(self,dt):
