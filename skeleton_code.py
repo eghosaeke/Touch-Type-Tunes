@@ -73,7 +73,10 @@ class ScoreLabel(InstructionGroup):
         new_size = self.size_anim.eval(self.time)
         self.basic_label.font_size=new_size
         self.time += dt
-        return self.size_anim.is_active(self.time)
+        if not self.size_anim.is_active(self.time):
+            self.time = 0
+
+        return True
 
 
 
@@ -1298,7 +1301,8 @@ class Player(object):
                         self.score_change=True
                     # self.word_hits+=100
                     # print self.word_hits, "SCORE"
-
+                elif curr_lyric.end_of_lyric:
+                    pass
                 else:
                     self.score_change=False
                     self.audio_ctrl.play_sfx()
