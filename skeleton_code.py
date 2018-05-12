@@ -766,6 +766,7 @@ class LyricsWord(InstructionGroup):
     def on_miss(self):
         red=(1,0,0,1)
         self.label.set_color(self.current,red)
+        self.pulse_word()
 
     def fly(self):
         x = np.array([self.pos[0],Window.width*0.6])
@@ -1411,12 +1412,12 @@ class Player(object):
         self.display.on_update()
         if self.improv:
             self.improv_group.on_update()
-        print self.display.curr_lyric.below_screen
-        if self.display.curr_lyric.below_screen:
-            if not self.display.curr_lyric.end_of_lyric:
+        if self.game_started:
+            if self.display.curr_lyric.below_screen:
+                if not self.display.curr_lyric.end_of_lyric:
 
-                self.audio_ctrl.play_sfx()
-                self.audio_ctrl.set_mute(True)
+                    self.audio_ctrl.play_sfx()
+                    self.audio_ctrl.set_mute(True)
 
 
 
