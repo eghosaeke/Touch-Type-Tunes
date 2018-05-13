@@ -148,6 +148,10 @@ class CustomLabel(object):
             elif start:
                 for idx in range(start,len(self.text)):
                     self.set_color(idx,color)
+            elif end:
+                print "here!"
+                for idx in range(end):
+                    self.set_color(idx,color)
 
 
     def set_bold(self,idx):
