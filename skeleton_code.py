@@ -239,6 +239,8 @@ class MainWidget(BaseWidget):
         self.improv_disp.user_input.tpos =[width*.8,height*.65]
         self.improv_disp.tpos =[width*.8,height*.65]
         self.improv_disp.improvise.tpos =[width*.8,height*.7]
+        self.beat_disp.start_pos = (20,height+10)
+
         
     def on_key_down(self, keycode, modifiers):
         # print 'key-down', keycode, modifiers
