@@ -46,7 +46,7 @@ elif os.name == "mac" or os.name == "posix":
     font_path = ["/System/Library/Fonts","/Library/Fonts"]
 
 
-font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path[1]))
+# font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path[1]))
 # print font_files
 
 class ScoreLabel(InstructionGroup):
@@ -861,8 +861,8 @@ class LyricsWord(InstructionGroup):
         self.add(self.rect)
 
     def pulse_word(self):
-        start_size = self.label.get_fontsize()        
-        end_size = self.label.get_fontsize() + 4
+        start_size = self.label.font_size       
+        end_size = self.label.font_size + 4
         self.pulse_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
         self.pulse_time = 0
         self.pulsing = True
@@ -899,13 +899,15 @@ class LyricsWord(InstructionGroup):
             if self.pulsing:
                 new_size= self.pulse_anim.eval(self.pulse_time)
                 if new_size > 0:
-                    self.label.set_fontsize(int(new_size))
+                    self.label.font_size = (int(new_size))
                     self.rect.size=self.label.texture.size
+                    self.rect.texture = self.label.texture
                     
                 if not self.pulse_anim.is_active(self.pulse_time):
                     self.pulsing = False
-                    self.label.set_fontsize(self.start_size)
+                    self.label.font_size = self.start_size
                     self.rect.size=self.label.texture.size
+                    self.rect.texture = self.label.texture
 
 
             
@@ -1061,7 +1063,6 @@ class LyricsPhrase(InstructionGroup):
 
         self.time += dt
         self.objects.on_update()
-        print self.size
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
         
