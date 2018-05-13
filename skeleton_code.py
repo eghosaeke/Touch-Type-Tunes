@@ -422,6 +422,10 @@ class MainWidget(BaseWidget):
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
+        
+        if self.audio_cont.last_part or self.audio_cont.improv:
+            self.update_bg()
+
 
 # creates the Audio driver
 # creates a song and loads it with solo and bg audio tracks
@@ -1111,7 +1115,7 @@ class ImprovDisplay(InstructionGroup):
         
         self.objects = AnimGroup()
         self.improv_word = ""
-        self.user_input = BasicLabel("",tpos=(Window.width*.8,Window.height*.65),color=(0,1,0,1),font_size=35)
+        self.user_input = BasicLabel("",tpos=(Window.width*.8,Window.height*.65),color=(0,1,0,1),font_size=40)
         self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.8,Window.height*.7),font_size=50)
         self.improv_labels = {}
 
