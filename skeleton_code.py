@@ -236,10 +236,13 @@ class MainWidget(BaseWidget):
         height=float(self.size[1])
         self.sidebar.size=[width/2,height]
         self.score_label.basic_label.tpos =[width*.8,height*.8]
-        self.improv_disp.user_input.tpos =[width*.8,height*.65]
-        self.improv_disp.tpos =[width*.8,height*.65]
-        self.improv_disp.improvise.tpos =[width*.8,height*.7]
+        self.improv_disp.user_input.tpos =[width*.3,height*.65]
+        self.improv_disp.tpos =[width*.3,height*.65]
+        self.improv_disp.improvise.tpos =[width*.3,height*.7]
+        self.improv_disp.translate.x =width*.7
         self.beat_disp.start_pos = (20,height+10)
+
+   
 
         
     def on_key_down(self, keycode, modifiers):
@@ -422,10 +425,9 @@ class MainWidget(BaseWidget):
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
-        
-        if self.audio_cont.last_part or self.audio_cont.improv:
+        if self.audio_cont.last_part:
             self.update_bg()
-
+        
 
 # creates the Audio driver
 # creates a song and loads it with solo and bg audio tracks
@@ -740,7 +742,16 @@ class LyricsWord(InstructionGroup):
         b=float(np.interp(self.current,(0,len(self.text)),(14,33)))/255
         green=(r,g,b)
 
-        self.label.set_colors(green,None,None,self.current+1)
+        r=1
+        g=215.0/255
+        b=0
+        a=float(np.interp(self.current,(0,len(self.text)),(0.3,1)))
+        gold=(r,g,b,a)
+
+        if self.improv_word:
+            self.label.set_colors(gold,None,None,self.current+1)
+        else:
+            self.label.set_colors(green,None,None,self.current+1)
 
         # self.label.set_bold(self.current+1)
         new_text = self.label.texture
@@ -794,8 +805,8 @@ class LyricsWord(InstructionGroup):
         self.pulse_word()
 
     def fly(self):
-        x = np.array([self.pos[0],Window.width*0.6])
-        y = np.array([self.pos[1],Window.height*0.25])
+        x = np.array([self.pos[0],Window.width*0.65])
+        y = np.array([self.pos[1],Window.height*0.5])
         t = np.array([0,0.5])
         self.anim = zip(t,x,y)
         self.flying_anim = KFAnim(*self.anim)
@@ -1005,7 +1016,6 @@ class LyricsPhrase(InstructionGroup):
 
     #Use self.label set_color() function to change color of text at an index 
     def on_hit(self,char):
-        green=(0,1,0,1)
         if self.current_word.next_avail == char and not self.end_of_lyric:
             end = self.current_word.on_hit()
             if end:
@@ -1115,14 +1125,14 @@ class ImprovDisplay(InstructionGroup):
         
         self.objects = AnimGroup()
         self.improv_word = ""
-        self.user_input = BasicLabel("",tpos=(Window.width*.8,Window.height*.65),color=(0,1,0,1),font_size=40)
-        self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.8,Window.height*.7),font_size=50)
+        self.user_input = BasicLabel("",tpos=(Window.width*.3,Window.height*.65),color=(0,1,0,1),font_size=40)
+        self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.3,Window.height*.7),font_size=50)
         self.improv_labels = {}
 
         self.scale = Scale(.7,.7,.7)
         self.scale.origin = self.improvise.tpos
         self.add(self.scale)
-        self.translate = Translate(Window.width*.1,0)
+        self.translate = Translate(-Window.width*.3,0)
         self.add(self.translate)
 
         self.audio_cb = audio_cb
@@ -1130,7 +1140,7 @@ class ImprovDisplay(InstructionGroup):
         self.letter_buf = OrderedDict()
         self.create_hit_dict(self.phrases.keys())
         self.pre_started = True
-        self.tpos = (Window.width*.8,Window.height*.65)
+        self.tpos = (Window.width*.3,Window.height*.7)
         self.time = 0
         self.add(self.user_input)
         self.add(self.improvise)
@@ -1158,12 +1168,12 @@ class ImprovDisplay(InstructionGroup):
 
         # self.scale.origin = (0,0)
         # self.add(self.scale)
-        # self.add(Translate(1000,0))
+        #self.add(Translate(-Window.width*.8,Window.height*.65))
         # self.add(self.user_input)
         # self.add(self.improvise)
         # self.add(self.objects)
         self.scale_anim = KFAnim((0, self.scale.x,self.scale.y,self.scale.z), (0.5,1,1,0))
-        self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,-40))
+        self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,0))
         # self.add(PopMatrix())
 
         
