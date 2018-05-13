@@ -147,6 +147,7 @@ class GameStatusLabel(InstructionGroup):
         self.fading_out = False
         self.fading_in = False
         self.player_cb = player_cb
+        self.game_paused = True
         self.add(PushMatrix())
 
         
@@ -180,6 +181,12 @@ class GameStatusLabel(InstructionGroup):
         self.paused_screen = False
         self.end_screen = True
 
+    def paused_screen(self):
+        if not self.game_paused:
+            pass
+
+    def end_screen(self):
+        pass
 
     def on_update(self,dt):
         if self.fading_out:
@@ -264,14 +271,6 @@ class MainWidget(BaseWidget):
 
         self.canvas.add(Color(1,1,1,0.8))
         self.canvas.add(self.beat_disp)
-
-        # self.improv_disp.pre_start()
-        # self.canvas.add(PushMatrix())
-        
-        # self.canvas.add(Translate(400,-100))
-        # scale = Scale(0.5,0.5)
-        # scale.origin = (0,0)
-        # self.canvas.add(scale)
 
         self.improv_obj = AnimGroup()
         self.improv_obj.add(self.improv_disp)
