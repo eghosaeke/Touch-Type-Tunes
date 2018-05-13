@@ -62,7 +62,7 @@ class ScoreLabel(InstructionGroup):
         self.objects=AnimGroup()
         self.start_size =30
         self.end_size = 50
-        self.basic_label= BasicLabel("Score",tpos=(Window.width*0.8, 590),font_size=self.start_size,font_name=self.font_name)
+        self.basic_label= BasicLabel("Score",tpos=(Window.width*0.8, Window.height*.6),font_size=self.start_size,font_name=self.font_name)
         self.objects.add(self.basic_label)
         self.add(self.objects)
         self.size_anim = KFAnim((0, self.start_size),(.25, self.end_size),(.5, self.start_size))
@@ -258,12 +258,13 @@ class MainWidget(BaseWidget):
             self.sidebar = Rectangle(size = self.size ,pos =self.pos)
             
 
-        self.bind(pos=self.update_bg)
-        self.bind(size=self.update_bg)
+            
 
+        
 
         self.canvas.add(Color(1,1,1,0.8))
         self.canvas.add(self.beat_disp)
+
         # self.improv_disp.pre_start()
         # self.canvas.add(PushMatrix())
         
@@ -271,6 +272,7 @@ class MainWidget(BaseWidget):
         # scale = Scale(0.5,0.5)
         # scale.origin = (0,0)
         # self.canvas.add(scale)
+
         self.improv_obj = AnimGroup()
         self.improv_obj.add(self.improv_disp)
         self.canvas.add(self.improv_obj)
@@ -308,10 +310,24 @@ class MainWidget(BaseWidget):
         # self.canvas.add(self.rect)
         # self.canvas.add(self.hello)
         self.i = 0
+
+
+        self.bind(pos=self.update_bg)
+        self.bind(size=self.update_bg)
+
+
+
     def update_bg(self, *args):
         self.bg_img.pos = self.pos
         self.bg_img.size = self.size
-        self.sidebar.size=[float(self.size[0])/2,self.size[1]]
+        width=float(self.size[0])
+        height=float(self.size[1])
+        self.sidebar.size=[width/2,height]
+        self.score_label.basic_label.tpos =[width*.8,height*.8]
+        self.improv_disp.user_input.tpos =[width*.8,height*.65]
+        self.improv_disp.tpos =[width*.8,height*.65]
+        self.improv_disp.improvise.tpos =[width*.8,height*.7]
+        self.beat_disp.start_pos = (20,height+10)
 
         
     def on_key_down(self, keycode, modifiers):
@@ -497,6 +513,10 @@ class MainWidget(BaseWidget):
 
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
+
+        
+        if self.audio_cont.last_part or self.audio_cont.improv:
+            self.update_bg()
 
 
 # creates the Audio driver
@@ -778,12 +798,18 @@ class LyricsWord(InstructionGroup):
         self.vel = vel
         self.time = 0
         self.pulse_time=0
+        self.char_time={}
+
+
+
         self.added_lyric = False
         self.on_screen = False
+        self.below_screen = False
         self.improv_word = False
         self.anim_cb = anim_cb
         self.flying = False
         self.pulsing = False
+        self.pulsing_char= False
         self.start_size=40
         # print "text to type: ",text_to_type
         # print "text: ",text
@@ -801,26 +827,35 @@ class LyricsWord(InstructionGroup):
 
     #Use self.label set_color() function to change color of text at an index 
     def on_hit(self):
+        r=float(np.interp(self.current,(0,len(self.text)),(19,43)))/255
+        g=float(np.interp(self.current,(0,len(self.text)),(109,224)))/255
+        b=float(np.interp(self.current,(0,len(self.text)),(14,33)))/255
+        green=(r,g,b)
 
-        green=(0,1,0,1)
-        self.label.set_color(self.current,green)
-        self.label.set_bold(self.current+1)
+        self.label.set_colors(green,None,None,self.current+1)
+
+        # self.label.set_bold(self.current+1)
         new_text = self.label.texture
         self.rect.texture = new_text
         self.rect.size=self.label.texture.size
+
+        self.pulse_char(self.current)
+
+        
 
         # self.add(self.rect)
         
         self.current += 1
 
-
         try:
             self.next_avail=self.text[self.current]
             self.end_of_lyric=False
+            
             if self.next_avail == " ":
                 self.point_cb()
                 self.pulse_word()
                 self.rect.size=self.label.texture.size
+                self.rect.texture=self.label.texture
             return False
         except Exception as e:
             self.end_of_lyric=True
@@ -848,6 +883,7 @@ class LyricsWord(InstructionGroup):
     def on_miss(self):
         red=(1,0,0,1)
         self.label.set_color(self.current,red)
+        self.pulse_word()
 
     def fly(self):
         x = np.array([self.pos[0],Window.width*0.6])
@@ -862,11 +898,21 @@ class LyricsWord(InstructionGroup):
 
     def pulse_word(self):
         start_size = self.label.font_size       
-        end_size = self.label.font_size + 4
+        end_size = self.label.font_size + 10
         self.pulse_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
         self.pulse_time = 0
         self.pulsing = True
         self.rect.size=self.label.texture.size
+
+    def pulse_char(self,idx):
+        start_size = self.label.font_size       
+        end_size = self.label.font_size + 10
+        self.char_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
+        self.char_time[idx]=0
+        self.pulsing_char = True
+        self.rect.size=self.label.texture.size
+        self.anim_idx=idx
+        
 
 
     def on_update(self,dt):
@@ -884,6 +930,8 @@ class LyricsWord(InstructionGroup):
         else:
             self.time += dt
             self.pulse_time+=dt
+            for i in range(len(self.char_time)):
+                self.char_time[i]+=dt
             epsilon = (self.start_time-self.time)
             if epsilon < 0.01:
                 if not self.added_lyric:
@@ -895,6 +943,17 @@ class LyricsWord(InstructionGroup):
 
             if self.pos[1] < Window.height - self.rect.size[1]/2.0:
                 self.on_screen = True
+            if self.pos[1] < 0 :
+                self.below_screen = True
+
+            if self.pulsing_char:
+                char_size= self.char_anim.eval(self.char_time[self.anim_idx])
+                self.label.set_size(self.anim_idx,int(char_size))
+                self.rect.size=self.label.texture.size
+                self.rect.texture=self.label.texture
+
+                
+
 
             if self.pulsing:
                 new_size= self.pulse_anim.eval(self.pulse_time)
@@ -907,9 +966,13 @@ class LyricsWord(InstructionGroup):
                     self.pulsing = False
                     self.label.font_size = self.start_size
                     self.rect.size=self.label.texture.size
-                    self.rect.texture = self.label.texture
+                    self.rect.texture=self.label.texture
 
-
+                    for i in range(len(self.char_time)):
+                        if not self.char_anim.is_active(self.char_time[i]):
+                            self.label.set_size(i,40)
+                            self.rect.size=self.label.texture.size
+                            self.rect.texture=self.label.texture
             
             return self.time < self.end_time
 
@@ -947,6 +1010,7 @@ class LyricsPhrase(InstructionGroup):
         
         self.added_lyric = False
         self.on_screen = False
+        self.below_screen = False
 
         self.add(self.objects)
 
@@ -1065,6 +1129,8 @@ class LyricsPhrase(InstructionGroup):
         self.objects.on_update()
         if any([x.on_screen for x in self.objects.objects]):
             self.on_screen = True
+        if any([x.below_screen for x in self.objects.objects]):
+            self.below_screen = True
         
         if self.time > self.end_time:
             self.queue_cb()
@@ -1136,24 +1202,26 @@ class ImprovDisplay(InstructionGroup):
         super(ImprovDisplay, self).__init__()
         self.phrases = phrases
         self.add(PushMatrix())
-        self.scale = Scale(0.5,0.5,0)
-
-        self.scale.origin = (0,0)
-        self.add(self.scale)
-        self.translate = Translate(1000,0)
-        self.add(self.translate)
+        
         
         self.objects = AnimGroup()
         self.improv_word = ""
-        self.user_input = BasicLabel("",tpos=(400,300),color=(0,1,0,1),font_size=35)
-        self.improvise = BasicLabel("Improvise!!!",tpos=(150,550),font_size=50)
+        self.user_input = BasicLabel("",tpos=(Window.width*.8,Window.height*.65),color=(0,1,0,1),font_size=40)
+        self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.8,Window.height*.7),font_size=50)
         self.improv_labels = {}
+
+        self.scale = Scale(.7,.7,.7)
+        self.scale.origin = self.improvise.tpos
+        self.add(self.scale)
+        self.translate = Translate(Window.width*.1,0)
+        self.add(self.translate)
+
         self.audio_cb = audio_cb
         self.ps_cb = ps_cb
         self.letter_buf = OrderedDict()
         self.create_hit_dict(self.phrases.keys())
         self.pre_started = True
-        self.tpos = (100,400)
+        self.tpos = (Window.width*.8,Window.height*.65)
         self.time = 0
         self.add(self.user_input)
         self.add(self.improvise)
@@ -1440,6 +1508,7 @@ class Player(object):
                     self.audio_ctrl.play_sfx()
                     self.audio_ctrl.set_mute(True)
 
+
         elif not self.game_paused and self.improv:
                 self.improv_display.on_hit(char)
     @property
@@ -1461,5 +1530,13 @@ class Player(object):
         self.display.on_update()
         if self.improv:
             self.improv_group.on_update()
+        if self.game_started:
+            if self.display.curr_lyric.below_screen:
+                if not self.display.curr_lyric.end_of_lyric:
+
+                    self.audio_ctrl.play_sfx()
+                    self.audio_ctrl.set_mute(True)
+
+
 
 run(MainWidget)
