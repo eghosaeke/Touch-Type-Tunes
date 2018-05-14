@@ -285,7 +285,7 @@ class MainWidget(BaseWidget):
         self.song = 'Stems/Fetish'
         self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb,gameover_cb=self.gameover_cb)
         self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-selected-milestone3-buffers-fixed-full-improv.txt')
+        self.gem_data.read_data('Stems/Fetish-selected-finalpresentation-buffers-fixed.txt')
         self.gem_data.get_phrases()
         
         #Improv stuff
@@ -377,17 +377,18 @@ class MainWidget(BaseWidget):
         if platform == "macosx":
             ##GAME SCREEN VARIABLES
             self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.5*height)
+            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
             self.gstatus.bg_rect.size = self.gstatus.size
             self.gstatus.alpha_rect.size = self.gstatus.size
 
             self.score_label.basic_label.tpos =[width*.8,height*.8]
-            self.improv_disp.tpos =[width*.3,height*.65]
-            self.improv_disp.translate.x =width*.7
+            self.improv_disp.tpos =[width*.3,height*.7]
+            self.improv_disp.translate.x =width*.85
+            self.improv_disp.translate.y =height*.2
             self.beat_disp.start_pos = (20,height+10)
         elif platform == "win":
             self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.5*height)
+            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
             self.gstatus.bg_rect.size = self.gstatus.size
             self.gstatus.alpha_rect.size = self.gstatus.size
             self.improv_disp.scale.origin = (0,0)
@@ -1326,7 +1327,10 @@ class ImprovDisplay(InstructionGroup):
         self.letter_buf = OrderedDict()
         self.create_hit_dict(self.phrases.keys())
         self.pre_started = True
-        self.tpos = (Window.width*.3,Window.height*.5)
+        if platform == "win":
+            self.tpos = (Window.width*.3,Window.height*.5)
+        if platform == "macosx":
+            self.tpos = (Window.width*.3, Window.height*.7)
         self.time = 0
         self.add(self.user_input)
         self.add(self.objects)
