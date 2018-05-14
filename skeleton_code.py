@@ -25,7 +25,6 @@ from kivy.core.text import LabelBase
 from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 
-import random
 import numpy as np
 import bisect
 import string
@@ -35,7 +34,7 @@ from collections import deque, OrderedDict
 import re
 import textwrap
 from customlabel import BasicLabel, CustomLabel
-from random import random, randint,choice
+from random import random, randint,choice, uniform
 from copy import deepcopy
 
 
@@ -593,6 +592,7 @@ class MainWidget(BaseWidget):
         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
         # self.improv = self.player.improv
 
+        
         if self.audio_cont.last_part:
             self.update_bg()
         
@@ -888,7 +888,6 @@ class LyricsWord(InstructionGroup):
         self.char_time={}
 
 
-
         self.added_lyric = False
         self.on_screen = False
         self.below_screen = False
@@ -926,8 +925,10 @@ class LyricsWord(InstructionGroup):
         a=float(np.interp(self.current,(0,len(self.text)),(0.3,1)))
         gold=(r,g,b,a)
 
+        
         if self.improv_word:
             self.label.set_colors(gold,None,None,self.current+1)
+    
         else:
             self.label.set_colors(green,None,None,self.current+1)
 
@@ -937,10 +938,6 @@ class LyricsWord(InstructionGroup):
         self.rect.size=self.label.texture.size
 
         self.pulse_char(self.current)
-
-        
-
-        # self.add(self.rect)
         
         self.current += 1
 
@@ -1248,6 +1245,7 @@ class ImprovPhrase(InstructionGroup):
         super(ImprovPhrase, self).__init__()
         self.phrase = phrase
         self.og_pos = tpos
+        self.letter_idx=self.phrase.find(letter)
         self.vel = np.array((randint(50,150),randint(-50,50)), dtype=np.float)
         self.cust = CustomLabel(phrase,font_size=35)
         self.cust.set_colors((0,.87,1,1),letter)
@@ -1305,7 +1303,8 @@ class ImprovDisplay(InstructionGroup):
         self.phrases = phrases
         self.add(PushMatrix())
         
-        
+        self.letter_colors={}
+
         self.objects = AnimGroup()
         self.improv_word = ""
         self.user_input = BasicLabel("",tpos=(Window.width*.3,Window.height*.65),color=(0,1,0,1),font_size=40)
@@ -1406,10 +1405,17 @@ class ImprovDisplay(InstructionGroup):
         try:
             i = self.phrases.keys().index(word)
             letter_to_hit = self.letter_buf.keys()[i]
+            hue=uniform(0.0, 0.9)
+            random_color = hsv_to_rgb(hue, 1, 1)
+
+            self.letter_colors[letter_to_hit]=random_color
             improv_label = ImprovPhrase(word,letter_to_hit,self.tpos,(1,1,1))
             self.objects.add(improv_label)
             self.improv_labels[letter_to_hit] = improv_label
             self.tpos = (self.tpos[0],self.tpos[1]-50)
+
+
+
         except Exception as e:
             print e
 
@@ -1417,11 +1423,19 @@ class ImprovDisplay(InstructionGroup):
         buf = self.letter_buf.get(char,None)
         word = self.improv_labels.get(char,None)
         if buf and word and self.audio_cb:
+            word.cust.set_color(word.letter_idx,self.letter_colors[char])
             self.audio_cb(buf)
             if self.ps_cb:
-                self.ps_cb(word.tpos,(1,0,0,0.6))
+                self.ps_cb(word.tpos,self.letter_colors[char])
         self.improv_word = ""
         self.user_input.text = ""
+
+    def on_up(self,char):
+
+        word = self.improv_labels.get(char,None)
+        if word:
+            word.cust.set_color(word.letter_idx,(0,.87,1,1))
+
 
     def on_update(self,dt):
         if not self.pre_started:
@@ -1628,7 +1642,7 @@ class Player(object):
             self.score_change=False
             self.display.on_button_up(char)
         elif not self.game_paused and self.improv:
-            pass
+            self.improv_display.on_up(char)
 
     # needed to check if for pass gems (ie, went past the slop window)
     def on_update(self):
