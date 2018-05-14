@@ -178,7 +178,7 @@ class GameStatusLabel(InstructionGroup):
             self.text_color = Color(1,1,1,0.85)
             self.add(self.text_color)
             self.add(self.label)
-            self.paused_text = "Studio session paused\nWhen you're ready\npress 'shift enter' to continue the game"
+            self.paused_text = "Studio session paused\nWhen you're ready\nPress 'shift enter' to continue the game"
             self.label.text = self.paused_text
             self.game_paused = True
             self.paused_screen = True
@@ -533,6 +533,7 @@ class MainWidget(BaseWidget):
         
         self.gstatus.end_text += "\n\nAccuracy: {:.2%}".format(self.player.get_words_hit()/self.beat_disp.get_max_words())
         self.gstatus.end_text += "\nWords Hit: {}".format(self.player.get_words_hit())
+        self.gstatus.end_text += "\n\nPress 'ctrl enter' to restart the game"
         self.gstatus.game_finished = True
         self.gstatus.activate()
 
@@ -1152,8 +1153,6 @@ class LyricsPhrase(InstructionGroup):
         lines = wrapped_text.split("\n")
         # print "phrases: ",phrases
         # print "lines: ",lines
-        print self.text
-        print self.text_to_type
         reg = re.compile(" "+self.text_to_type+" ")
         reg_beg = re.compile(self.text_to_type+" ")
         reg_end = re.compile(" "+self.text_to_type)
