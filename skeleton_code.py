@@ -434,6 +434,10 @@ class MainWidget(BaseWidget):
                 self.player.improv = False
                 self.beat_disp.improv = False
                 self.audio_cont.improv = False
+                if self.gstatus.is_active:
+                    self.gstatus.deactivate()
+                self.gstatus.restart()
+                self.gstatus.activate()
                 self.player.restart_game()
 
         #pass spacebar values to player as " "
@@ -628,14 +632,14 @@ class AudioController(object):
         self.called_gg = False
 
     def start(self):
-        if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
-            """
-            Needed to restart game
-            """
-            self.mixer.remove_all()
-            self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
-            self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
-            self.last_part = False
+        # if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
+        #     """
+        #     Needed to restart game
+        #     """
+        #     self.mixer.remove_all()
+        #     self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+        #     self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+        #     self.last_part = False
         self.bg_gen = WaveGenerator(self.bg_audio)
         self.solo_gen = WaveGenerator(self.solo_audio)
         self.bg_gen.set_gain(0.5)
@@ -645,6 +649,20 @@ class AudioController(object):
         self.game_paused = False
         self.game_started = True
         if self.called_gg:
+            self.called_gg = False
+
+    def restart(self):
+        if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
+            """
+            Needed to restart game
+            """
+            self.mixer.remove_all()
+            self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+            self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+            self.last_part = False
+            self.game_paused = True
+            self.game_started = False
+            self.improv = False
             self.called_gg = False
 
     # start / stop the song
@@ -1306,8 +1324,6 @@ class ImprovDisplay(InstructionGroup):
         self.letter_colors={}
 
         self.objects = AnimGroup()
-        self.improv_word = ""
-        self.user_input = BasicLabel("",tpos=(Window.width*.3,Window.height*.65),color=(0,1,0,1),font_size=40)
         self.improv_labels = {}
 
         
@@ -1328,7 +1344,6 @@ class ImprovDisplay(InstructionGroup):
         self.pre_started = True
         self.tpos = (Window.width*.3,Window.height*.5)
         self.time = 0
-        self.add(self.user_input)
         self.add(self.objects)
         self.add(PopMatrix())
 
@@ -1339,7 +1354,6 @@ class ImprovDisplay(InstructionGroup):
     #     self.scale.origin = (0,0)
     #     self.add(self.scale)
     #     self.add(Translate(1000,0))
-    #     self.add(self.user_input)
     #     self.add(self.objects)
         
 
@@ -1353,7 +1367,6 @@ class ImprovDisplay(InstructionGroup):
         # self.scale.origin = (0,0)
         # self.add(self.scale)
         #self.add(Translate(-Window.width*.8,Window.height*.65))
-        # self.add(self.user_input)
         # self.add(self.objects)
         self.scale_anim = KFAnim((0, self.scale.x,self.scale.y,self.scale.z), (0.5,1,1,0))
         if platform == "win" or platform == 'linux':
@@ -1373,11 +1386,30 @@ class ImprovDisplay(InstructionGroup):
         #     i += 1
 
     def restart(self):
-        self.remove(self.user_input)
         self.remove(self.objects)
+        self.add(PushMatrix())
+        
+        self.letter_colors={}
+
         self.objects = AnimGroup()
         self.improv_labels = {}
-        self.improv_word = ""
+
+        
+        if platform == "macosx":
+            self.scale = Scale(0.7,0.7,0.7)
+            self.translate = Translate(-Window.width*0.3,0)
+        elif platform == "win":
+            self.scale = Scale(.5,.5,0)
+            self.scale.origin = (0,0)
+            self.translate = Translate(Window.width*1.25,Window.height*0.55)
+        self.add(self.scale)
+        self.add(self.translate)
+        self.pre_started = True
+        self.tpos = (Window.width*.3,Window.height*.5)
+        self.time = 0
+        self.add(self.objects)
+        self.add(PopMatrix())
+
 
     def create_hit_dict(self,phrases):
         for i in range(len(phrases)):
@@ -1402,6 +1434,7 @@ class ImprovDisplay(InstructionGroup):
         return True
 
     def add_improv_word(self,word):
+        print "adding improv word"
         try:
             i = self.phrases.keys().index(word)
             letter_to_hit = self.letter_buf.keys()[i]
@@ -1427,8 +1460,6 @@ class ImprovDisplay(InstructionGroup):
             self.audio_cb(buf)
             if self.ps_cb:
                 self.ps_cb(word.tpos,self.letter_colors[char])
-        self.improv_word = ""
-        self.user_input.text = ""
 
     def on_up(self,char):
 
@@ -1518,7 +1549,7 @@ class BeatMatchDisplay(InstructionGroup):
             self.add(self.objects)
             self.lyrics_deque = deque()
             self.score = 0
-            self.start()
+            # self.start()
 
     def toggle(self):
         self.game_paused = not self.game_paused
@@ -1601,11 +1632,15 @@ class Player(object):
 
     def restart_game(self):
         self.display.restart()
-        self.audio_ctrl.start()
+        self.audio_ctrl.restart()
         self.improv_display.restart()
         # self.word_hits = 0
         self.longest_streak = 0
-        self.game_paused = False
+        self.game_paused = True
+        self.game_started = False
+        self.improv = False
+        self.score_change = False
+
 
 
     # called by MainWidget
