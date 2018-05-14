@@ -1152,7 +1152,22 @@ class LyricsPhrase(InstructionGroup):
         lines = wrapped_text.split("\n")
         # print "phrases: ",phrases
         # print "lines: ",lines
-        start_ty = self.text.find(self.text_to_type)
+        print self.text
+        print self.text_to_type
+        reg = re.compile(" "+self.text_to_type+" ")
+        reg_beg = re.compile(self.text_to_type+" ")
+        reg_end = re.compile(" "+self.text_to_type)
+        match = reg.search(self.text)
+        if match:
+            start_ty = match.start()+1
+        else:
+            match = reg_beg.search(self.text)
+            if match:
+                start_ty = match.start()
+            else:
+                match = reg_end.search(self.text)
+                if match:
+                    start_ty = match.start()+1
         end_ty = start_ty + len(self.text_to_type)
         i = 0
         glob_dict = OrderedDict()
