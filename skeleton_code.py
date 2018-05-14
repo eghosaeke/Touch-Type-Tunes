@@ -316,8 +316,6 @@ class MainWidget(BaseWidget):
             self.sidebar = Rectangle(size = self.size ,pos =self.pos)
             
 
-            
-
         
 
         self.canvas.add(Color(1,1,1,0.8))
@@ -532,7 +530,9 @@ class MainWidget(BaseWidget):
             self.audio_cont.improv = True
 
     def gameover_cb(self):
-        self.gstatus.end_text += "\n\nADD STUFF HERE"
+        
+        self.gstatus.end_text += "\n\nAccuracy: {:.2%}".format(self.player.get_words_hit()/self.beat_disp.get_max_words())
+        self.gstatus.end_text += "\nWords Hit: {}".format(self.player.get_words_hit())
         self.gstatus.game_finished = True
         self.gstatus.activate()
 
@@ -1547,6 +1547,8 @@ class BeatMatchDisplay(InstructionGroup):
         self.game_started = False
         self.improv = False
         self.lyrics_deque = deque()
+        #Max possible interactive words
+        self.maxWords = 0.0
 
     def start(self):
         phrases = self.gem_data.get_phrases_in_order()
@@ -1557,6 +1559,9 @@ class BeatMatchDisplay(InstructionGroup):
                                     self.fly_cb)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
+            
+            #Count the number of interactive words
+            self.maxWords+=lyric.num_words
         self.game_paused = False
         self.game_started = True
         self.curr_lyric = self.lyrics_deque[0]
@@ -1606,6 +1611,9 @@ class BeatMatchDisplay(InstructionGroup):
         self.lyrics_deque.popleft()
         if len(self.lyrics_deque) != 0:
             self.curr_lyric = self.lyrics_deque[0]
+    
+    def get_max_words(self):
+        return self.maxWords
 
     # call every frame to make gems and barlines flow down the screen
     def on_update(self) :
@@ -1635,6 +1643,8 @@ class Player(object):
         self.improv = False
         self.score_change=False
         
+        self.words_hit = 0
+        
 
 
     # called by MainWidget to play/pause game
@@ -1659,7 +1669,9 @@ class Player(object):
         self.game_started = False
         self.improv = False
         self.score_change = False
-
+    
+    def get_words_hit(self):
+        return self.words_hit
 
 
     # called by MainWidget
@@ -1673,6 +1685,7 @@ class Player(object):
                     self.audio_ctrl.set_mute(False)
                     if char == " " or curr_lyric.end_of_lyric==True:
                         self.score_change=True
+                        self.words_hit+=1
                     # self.word_hits+=100
                     # print self.word_hits, "SCORE"
                 elif curr_lyric.end_of_lyric:
