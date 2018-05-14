@@ -23,6 +23,7 @@ from kivy.core.text import Label as CoreLabel
 from kivy.core.text.markup import MarkupLabel
 from kivy.core.text import LabelBase
 from kivy.utils import platform
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 
 import numpy as np
 import bisect
@@ -44,7 +45,7 @@ elif os.name == "mac" or os.name == "posix":
     font_path = ["/System/Library/Fonts","/Library/Fonts"]
 
 
-font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path[1]))
+# font_files = filter(lambda f: f.endswith(".ttf") or f.endswith(".TTF"),os.listdir(font_path[1]))
 # print font_files
 
 class ScoreLabel(InstructionGroup):
@@ -75,17 +76,6 @@ class ScoreLabel(InstructionGroup):
 
         return True
 
-
-
-def improv_label(text,tpos):
-    if platform == "macosx":        
-        font_name= "Comic Sans MS"
-    elif platform == "win":
-        font_name = "comic"
-    else:
-        font_name = ""
-    l = BasicLabel(text,tpos=tpos,font_size=35,font_name=font_name)
-    return l 
 
 def system_info_label():
     l = BasicLabel("",tpos=(20, 590),font_size=25)
@@ -142,11 +132,157 @@ class GameStatusChecker(object):
                     self.gameover_cb()
                     self.call_once = True
 
+class GameStatusLabel(InstructionGroup):
+    def __init__(self,player_cb):
+        super(GameStatusLabel, self).__init__()
+        self.title_screen = True
+        self.paused_screen = False
+        self.end_screen = False
+        self.color = Color(0,0,0,0.75)
+        self.pos = (0,0)
+        self.size = (Window.width,Window.height)
+        self.bg_rect = Rectangle(pos=self.pos,size=self.size,source="studio_booth.jpg")
+
+        self.label = BasicLabel("Title Screen",tpos=(Window.width*0.1,Window.height*0.85),font_size=40,halign='center')
+        self.alpha_rect = Rectangle(pos=self.pos,size=self.size)
+        self.fading_out = False
+        self.fading_in = False
+        self.player_cb = player_cb
+        self.game_paused = True
+        self.game_finished = False
+        self.is_active = True
+        
+
+    
+    def activate(self):
+        self.is_active = True
+        if self.title_screen:
+            self.add(PushMatrix())
+            self.add(self.bg_rect)
+            self.add(self.color)
+            self.add(self.alpha_rect)
+            self.add(PopMatrix())
+            self.text_color = Color(1,1,1,0.85)
+            self.add(self.text_color)
+            self.add(self.label)
+            self.title_text = "Welcome to Touch Type Tunes\nWhen you're ready\npress 'shift enter' to start the game"
+            self.label.text = self.title_text
+            self.game_paused = False
+        elif not self.game_paused and not self.game_finished:
+            self.add(PushMatrix())
+            self.add(self.bg_rect)
+            self.add(self.color)
+            self.add(self.alpha_rect)
+            self.add(PopMatrix())
+            self.text_color = Color(1,1,1,0.85)
+            self.add(self.text_color)
+            self.add(self.label)
+            self.paused_text = "Studio session paused\nWhen you're ready\npress 'shift enter' to continue the game"
+            self.label.text = self.paused_text
+            self.game_paused = True
+            self.paused_screen = True
+        elif self.game_finished:
+            self.add(PushMatrix())
+            self.add(self.bg_rect)
+            self.add(self.color)
+            self.add(self.alpha_rect)
+            self.add(PopMatrix())
+            self.text_color = Color(1,1,1,0.85)
+            self.add(self.text_color)
+            self.add(self.label)
+            self.end_text = "Game Over!\n\npress 'ctrl enter' to restart the game"
+            self.label.text = self.end_text
+            self.game_paused = True
+            self.paused_screen = False
+
+    def deactivate(self):
+        self.is_active = False
+        self.remove(self.label)
+        self.remove(self.text_color)
+        self.remove(self.alpha_rect)
+        self.remove(self.color)
+        self.remove(self.bg_rect)
+        if self.title_screen:
+            self.title_screen = False
+        elif self.paused_screen:
+            self.game_paused = False
+            self.paused_screen = False
+        elif self.game_finished:
+            pass
+
+        
+    def transistion(self):
+        self.time = 0
+        self.fade_color = Color(0,0,0,0.75)
+        self.fade_rect = Rectangle(pos=(0,0),size=(Window.width,Window.height))
+        self.fade_out = KFAnim((0,0,0,0,0.75),(0.25,0,0,0,1))
+        self.fade_in = KFAnim((0,0,0,0,1),(0.25,0,0,0,0))
+        self.fading_out = True
+        self.fading_in = False
+        self.add(self.fade_color)
+        self.add(self.fade_rect)
+        self.on_update(0)
+
+
+    def restart(self):
+        self.title_screen = True
+        self.paused_screen = False
+        self.end_screen = False
+        self.game_paused = True
+        self.game_finished = False
+
+    def paused_screen(self):
+        if not self.game_paused:
+            pass
+
+    def end_screen(self):
+        pass
+
+    def on_update(self,dt):
+        if self.fading_out:
+            r,g,b,a = self.fade_out.eval(self.time)
+            self.color = Color(r,g,b,a)
+            self.add(self.color)
+            self.time += dt
+            if not self.fade_out.is_active(self.time):
+                print "done fading out: "
+                self.remove(self.bg_rect)
+                self.remove(self.color)
+                self.remove(self.alpha_rect)
+                self.remove(self.label)
+                self.fading_out = False
+                self.fading_in = True
+                self.time = 0
+        elif self.fading_in:
+            print "start fade in"
+            r,g,b,a = self.fade_in.eval(self.time)
+            self.color = Color(r,g,b,a)
+            self.add(self.color)
+            self.time += dt
+            if not self.fade_in.is_active(self.time):
+                self.remove(self.fade_color)
+                self.remove(self.fade_rect)
+                self.fading_in = False
+                self.player_cb()
+
+        return True
+
+
+
+class GameScreen(Screen):
+    pass
+
+
+
+        
+
+
+
 class MainWidget(BaseWidget):
     def __init__(self):
         super(MainWidget, self).__init__()
         self.song = 'Stems/Fetish'
-        self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb)
+        self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb,gameover_cb=self.gameover_cb)
         self.gem_data = SongData()
         self.gem_data.read_data('Stems/Fetish-selected-milestone3-buffers-fixed-full-improv.txt')
         self.gem_data.get_phrases()
@@ -166,12 +302,18 @@ class MainWidget(BaseWidget):
         self.improv = False 
         self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf,self.ps_cb)
         self.beat_disp = BeatMatchDisplay(self.gem_data,self.improv_disp.add_improv_word)
+
+        self.sm = ScreenManager(transition=FadeTransition())
+        self.game_scrn = GameScreen(name="game")
+        self.sm.add_widget(self.game_scrn)
+        # self.add_widget(self.sm)
         
         with self.canvas.before:
         #     # ADD BACKGROUND IMAGE TO GAME
             self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
             Color(0, 0, 0, 0.3)
             self.sidebar = Rectangle(size = self.size ,pos =self.pos)
+            
 
             
 
@@ -179,14 +321,6 @@ class MainWidget(BaseWidget):
 
         self.canvas.add(Color(1,1,1,0.8))
         self.canvas.add(self.beat_disp)
-
-        # self.improv_disp.pre_start()
-        # self.canvas.add(PushMatrix())
-        
-        # self.canvas.add(Translate(400,-100))
-        # scale = Scale(0.5,0.5)
-        # scale.origin = (0,0)
-        # self.canvas.add(scale)
 
         self.improv_obj = AnimGroup()
         self.improv_obj.add(self.improv_disp)
@@ -202,7 +336,12 @@ class MainWidget(BaseWidget):
         self.particles = deque()
         self.player = Player(self.gem_data,self.beat_disp,self.improv_obj,self.improv_disp,self.audio_cont,self.stop_ps)
         self.caps_on = False
-        
+        # with self.canvas.after:
+        self.gstatus = GameStatusLabel(self.player.toggle_game)
+        self.gstatus_obj = AnimGroup()
+        self.gstatus_obj.add(self.gstatus)
+        self.canvas.add(self.gstatus_obj)
+        self.gstatus.activate()
         # test_text = "HELLO WOLRD"
         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
@@ -234,12 +373,29 @@ class MainWidget(BaseWidget):
         width=float(self.size[0])
         height=float(self.size[1])
         self.sidebar.size=[width/2,height]
-        self.score_label.basic_label.tpos =[width*.8,height*.8]
-        self.improv_disp.user_input.tpos =[width*.3,height*.65]
-        self.improv_disp.tpos =[width*.3,height*.65]
-        self.improv_disp.improvise.tpos =[width*.3,height*.7]
-        self.improv_disp.translate.x =width*.7
-        self.beat_disp.start_pos = (20,height+10)
+        if platform == "macosx":
+            ##GAME SCREEN VARIABLES
+            self.gstatus.size = (width,height)
+            self.gstatus.label.tpos=(width*0.1,height*0.85)
+            self.gstatus.bg_rect.size = self.gstatus.size
+            self.gstatus.alpha_rect.size = self.gstatus.size
+
+            self.score_label.basic_label.tpos =[width*.8,height*.8]
+            self.improv_disp.tpos =[width*.3,height*.65]
+            self.improv_disp.improvise.tpos =[width*.3,height*.7]
+            self.improv_disp.translate.x =width*.7
+            self.beat_disp.start_pos = (20,height+10)
+        elif platform == "win":
+            self.gstatus.size = (width,height)
+            self.gstatus.label.tpos=(width*0.1,height*0.85)
+            self.gstatus.bg_rect.size = self.gstatus.size
+            self.gstatus.alpha_rect.size = self.gstatus.size
+            self.improv_disp.scale.origin = (0,0)
+            self.score_label.basic_label.tpos =[width*.8,height*.8]
+            self.improv_disp.tpos =[width*.3,height*.6]
+            self.improv_disp.improvise.tpos =[width*.3,height*.7]
+            self.improv_disp.translate.x = width*1.25
+            self.beat_disp.start_pos = (20,height+10)
 
    
 
@@ -267,7 +423,13 @@ class MainWidget(BaseWidget):
         # play / pause toggle
         if keycode[1] == 'enter':
             if "shift" in modifiers:
+                if self.gstatus.is_active:
+                    self.gstatus.deactivate()
+                else:
+                    self.gstatus.activate()
                 self.player.toggle_game()
+                # self.canvas.remove(self.gstatus_obj)
+                # self.gstatus.transistion()
             elif "ctrl" in modifiers:
                 self.improv = False
                 self.player.improv = False
@@ -365,6 +527,11 @@ class MainWidget(BaseWidget):
             self.beat_disp.improv = True
             self.audio_cont.improv = True
 
+    def gameover_cb(self):
+        self.gstatus.end_txt += "ADD STUFF HERE"
+        self.gstatus.game_finished = True
+        self.gstatus.activate()
+
     def ps_cb(self,pos,color,duration=1.0):
         """
         Add particle systems to screen on succesful event
@@ -411,6 +578,8 @@ class MainWidget(BaseWidget):
         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+        # if not self.player.game_started:
+        #     self.gstatus_obj.on_update()
         self.improv_obj.on_update()
         self.score_label.basic_label.text = "Score"
         self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
@@ -433,7 +602,7 @@ class MainWidget(BaseWidget):
 # creates a song and loads it with solo and bg audio tracks
 # creates snippets for audio sound fx
 class AudioController(object):
-    def __init__(self, song_path,improv_cb=None,listener=None):
+    def __init__(self, song_path,improv_cb=None,gameover_cb=None,listener=None):
         super(AudioController, self).__init__()
         if listener:
             self.audio = Audio(2,listener)
@@ -456,6 +625,8 @@ class AudioController(object):
         self.improv = False
         self.last_part = False
         self.improv_cb = improv_cb
+        self.gameover_cb = gameover_cb
+        self.called_gg = False
 
     def start(self):
         if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
@@ -474,6 +645,8 @@ class AudioController(object):
         self.mixer.add(self.solo_gen)
         self.game_paused = False
         self.game_started = True
+        if self.called_gg:
+            self.called_gg = False
 
     # start / stop the song
     def toggle(self):
@@ -540,9 +713,15 @@ class AudioController(object):
                     self.improv_cb(end=True)
                     self.load_part2()
                     self.last_part = True
+        if self.game_started  and self.last_part and self.mixer.get_num_generators() == 0:
+            if self.gameover_cb and not self.called_gg:
+                print "calling gameover"
+                self.gameover_cb()
+                self.called_gg = True
         elif self.game_started and self.last_part:
             self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
             self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+        
 
 
 
@@ -772,6 +951,12 @@ class LyricsWord(InstructionGroup):
                 self.pulse_word()
                 self.rect.size=self.label.texture.size
                 self.rect.texture=self.label.texture
+                if self.improv_word:
+                    if self.anim_cb:
+                        copy_word = self.copy()
+                    
+                        copy_word.fly()
+                        self.anim_cb(copy_word)
             return False
         except Exception as e:
             self.end_of_lyric=True
@@ -804,7 +989,7 @@ class LyricsWord(InstructionGroup):
     def fly(self):
         x = np.array([self.pos[0],Window.width*0.65])
         y = np.array([self.pos[1],Window.height*0.5])
-        t = np.array([0,0.5])
+        t = np.array([0,0.3])
         self.anim = zip(t,x,y)
         self.flying_anim = KFAnim(*self.anim)
         self.time = 0
@@ -813,16 +998,16 @@ class LyricsWord(InstructionGroup):
         self.add(self.rect)
 
     def pulse_word(self):
-        start_size = 40
-        end_size =50
+        start_size = self.label.font_size       
+        end_size = self.label.font_size + 10
         self.pulse_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
         self.pulse_time = 0
         self.pulsing = True
         self.rect.size=self.label.texture.size
 
     def pulse_char(self,idx):
-        start_size = 40     
-        end_size = 50
+        start_size = self.label.font_size       
+        end_size = self.label.font_size + 10
         self.char_anim = KFAnim((0, start_size),(.1, end_size),(.2,start_size))
         self.char_time[idx]=0
         self.pulsing_char = True
@@ -873,13 +1058,14 @@ class LyricsWord(InstructionGroup):
 
             if self.pulsing:
                 new_size= self.pulse_anim.eval(self.pulse_time)
-                self.label.set_fontsize(int(new_size))
-                self.rect.size=self.label.texture.size
-                self.rect.texture=self.label.texture
+                if new_size > 0:
+                    self.label.font_size = (int(new_size))
+                    self.rect.size=self.label.texture.size
+                    self.rect.texture = self.label.texture
                     
                 if not self.pulse_anim.is_active(self.pulse_time):
                     self.pulsing = False
-                    self.label.set_fontsize(self.start_size)
+                    self.label.font_size = self.start_size
                     self.rect.size=self.label.texture.size
                     self.rect.texture=self.label.texture
 
@@ -888,8 +1074,6 @@ class LyricsWord(InstructionGroup):
                             self.label.set_size(i,40)
                             self.rect.size=self.label.texture.size
                             self.rect.texture=self.label.texture
-
-
             
             return self.time < self.end_time
 
@@ -989,7 +1173,7 @@ class LyricsPhrase(InstructionGroup):
                 elif i > start_ty and i < end_ty:
                     curr_phrase += glob_dict[i]
                     if s == len(line)-1:
-                        if l < len(lines)-1:
+                        if l < len(lines)-1 and len(lines) > 1 :
                             curr_phrase += " "
                         i += 1
                         self.create_word(curr_phrase,True)
@@ -1128,10 +1312,16 @@ class ImprovDisplay(InstructionGroup):
         self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.3,Window.height*.7),font_size=40)
         self.improv_labels = {}
 
-        self.scale = Scale(.7,.7,.7)
-        self.scale.origin = self.improvise.tpos
+        
+        if platform == "macosx":
+            self.scale = Scale(0.7,0.7,0.7)
+            self.scale.origin = self.improvise.tpos
+            self.translate = Translate(-Window.width*0.3,0)
+        elif platform == "win":
+            self.scale = Scale(.5,.5,0)
+            self.scale.origin = (0,0)
+            self.translate = Translate(Window.width*1.25,Window.height*0.55)
         self.add(self.scale)
-        self.translate = Translate(-Window.width*.3,0)
         self.add(self.translate)
 
         self.audio_cb = audio_cb
@@ -1139,7 +1329,7 @@ class ImprovDisplay(InstructionGroup):
         self.letter_buf = OrderedDict()
         self.create_hit_dict(self.phrases.keys())
         self.pre_started = True
-        self.tpos = (Window.width*.3,Window.height*.7)
+        self.tpos = (Window.width*.3,Window.height*.5)
         self.time = 0
         self.add(self.user_input)
         self.add(self.improvise)
@@ -1172,7 +1362,10 @@ class ImprovDisplay(InstructionGroup):
         # self.add(self.improvise)
         # self.add(self.objects)
         self.scale_anim = KFAnim((0, self.scale.x,self.scale.y,self.scale.z), (0.5,1,1,0))
-        self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,0))
+        if platform == "win" or platform == 'linux':
+            self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,-45))
+        elif platform == 'macosx':
+            self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,0))
         # self.add(PopMatrix())
 
         
@@ -1255,8 +1448,9 @@ class ImprovDisplay(InstructionGroup):
         if not self.pre_started:
             x,y,z = self.scale_anim.eval(self.time)
             dx,dy = self.trans_anim.eval(self.time)
-            self._trans = (dx,dy)
+            
             self._scale = (x,y,z)
+            self._trans = (dx,dy)
             self.time += dt
             
             if not self.scale_anim.is_active(self.time):

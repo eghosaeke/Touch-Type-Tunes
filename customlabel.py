@@ -132,7 +132,8 @@ class CustomLabel(object):
             Number representing start index to set color for
             Default: None
         end: int
-            Number representing end index for setting             Default: None
+            Number representing end index for setting
+            Default: None
         """
         if substr:
             og_text = self.og_text.replace("\n", " ")
@@ -149,7 +150,6 @@ class CustomLabel(object):
                 for idx in range(start,len(self.text)):
                     self.set_color(idx,color)
             elif end:
-                print "here!"
                 for idx in range(end):
                     self.set_color(idx,color)
 
@@ -211,7 +211,7 @@ class CustomLabel(object):
 
     def set_size(self,idx,fsize,start=True,end=True):
         """
-        Function to change the color of an individual character in the label
+        Function to change the font size of an individual character in the label
 
         Parameters
         ----------
@@ -219,6 +219,10 @@ class CustomLabel(object):
             Number representing index in string of the char to manipulate
         fsize: int
             Number representing font size of character
+        start: bool
+            Boolean representing if the size markup placed should be the beginning i.e [size=%d]
+        end: bool
+            Boolean representing if the size markup placed should be the ending one i.e [/size]
         """
         try:
             old_text = self.text_dict[idx]
@@ -246,9 +250,49 @@ class CustomLabel(object):
         except Exception as e:
 #            print e
             pass
+
+    def set_sizes(self,fsize,substr="",start=None,end=None):
+        """
+        Function to set the font size of multiple characters matching a specific substring
+        or from a start to end index
+
+        Parameters:
+        -----------
+        fsize: int
+            Number representing font size of text
+        substr: string
+            String representing substring of text to change font size fo
+            Default: ""
+        start: int
+            Number representing start index to set font size for
+            Default: None
+        end: int
+            Number representing end index for setting font size
+            Default: None
+        """
+        if substr:
+            og_text = self.og_text.replace("\n", " ")
+            start = og_text.find(substr)
+            if start != -1:
+                end = start + len(substr)
+                self.set_size(start,fsize,start=True,end=False)
+                self.set_size(end,fsize,start=False,end=True)
+        else:
+            if start and end:
+                self.set_size(start,fsize,start=True,end=False)
+                self.set_size(end,fsize,start=False,end=True)
+            elif start:
+                end = len(self.text)
+                self.set_size(start,fsize,start=True,end=False)
+                self.set_size(end,fsize,start=False,end=True)
+            elif end:
+                self.set_size(0,fsize,start=True,end=False)
+                self.set_size(end,fsize,start=False,end=True)
+
+
     def set_font(self,idx,font):
         """
-        Function to change the color of an individual character in the label
+        Function to change the font type of an individual character in the label
 
         Parameters
         ----------
@@ -260,10 +304,10 @@ class CustomLabel(object):
         """
         try:
             old_text = self.text_dict[idx]
-            font_regex = re.compile("(\[font=\d\])")
+            font_regex = re.compile("(\[font=\w+\])")
             match = font_regex.search(old_text)
             if match:
-                new_text = re.sub('\d',font,old_text)
+                new_text = re.sub('\w+',font,old_text)
             else:
                 markups = self.markup_regex.split(old_text)
                 new_text = ["[font=%s]" % font] + markups+ ["[/font]"]
