@@ -377,7 +377,7 @@ class MainWidget(BaseWidget):
         if platform == "macosx":
             ##GAME SCREEN VARIABLES
             self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(width*0.1,height*0.85)
+            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.5*height)
             self.gstatus.bg_rect.size = self.gstatus.size
             self.gstatus.alpha_rect.size = self.gstatus.size
 
@@ -387,7 +387,7 @@ class MainWidget(BaseWidget):
             self.beat_disp.start_pos = (20,height+10)
         elif platform == "win":
             self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(width*0.1,height*0.85)
+            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.5*height)
             self.gstatus.bg_rect.size = self.gstatus.size
             self.gstatus.alpha_rect.size = self.gstatus.size
             self.improv_disp.scale.origin = (0,0)
