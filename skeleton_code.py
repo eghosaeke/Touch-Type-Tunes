@@ -166,7 +166,7 @@ class GameStatusLabel(InstructionGroup):
             self.text_color = Color(1,1,1,0.85)
             self.add(self.text_color)
             self.add(self.label)
-            self.title_text = "Welcome to Touch Type Tunes\nWhen you're ready\npress 'shift enter' to start the game"
+            self.title_text = "Welcome to Touch Type Tunes!\n\nWhen the music starts, type the\nthe highlighted letters on the screen.\nPress 'shift enter' to cue the music."
             self.label.text = self.title_text
             self.game_paused = False
         elif not self.game_paused and not self.game_finished:
