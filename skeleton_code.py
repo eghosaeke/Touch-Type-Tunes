@@ -1707,8 +1707,6 @@ class Player(object):
         if self.game_started:
             if self.display.curr_lyric.below_screen:
                 if not self.display.curr_lyric.end_of_lyric:
-
-                    self.audio_ctrl.play_sfx()
                     self.audio_ctrl.set_mute(True)
 
 
