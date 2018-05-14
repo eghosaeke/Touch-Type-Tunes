@@ -151,6 +151,7 @@ class GameStatusLabel(InstructionGroup):
         self.game_paused = True
         self.game_finished = False
         self.is_active = True
+        self.end_text = "Game Over!"
         
 
     
@@ -190,7 +191,7 @@ class GameStatusLabel(InstructionGroup):
             self.text_color = Color(1,1,1,0.85)
             self.add(self.text_color)
             self.add(self.label)
-            self.end_text = "Game Over!\n\npress 'ctrl enter' to restart the game"
+            
             self.label.text = self.end_text
             self.game_paused = True
             self.paused_screen = False
@@ -382,7 +383,6 @@ class MainWidget(BaseWidget):
 
             self.score_label.basic_label.tpos =[width*.8,height*.8]
             self.improv_disp.tpos =[width*.3,height*.65]
-            self.improv_disp.improvise.tpos =[width*.3,height*.7]
             self.improv_disp.translate.x =width*.7
             self.beat_disp.start_pos = (20,height+10)
         elif platform == "win":
@@ -393,7 +393,6 @@ class MainWidget(BaseWidget):
             self.improv_disp.scale.origin = (0,0)
             self.score_label.basic_label.tpos =[width*.8,height*.8]
             self.improv_disp.tpos =[width*.3,height*.6]
-            self.improv_disp.improvise.tpos =[width*.3,height*.7]
             self.improv_disp.translate.x = width*1.25
             self.beat_disp.start_pos = (20,height+10)
 
@@ -528,7 +527,7 @@ class MainWidget(BaseWidget):
             self.audio_cont.improv = True
 
     def gameover_cb(self):
-        self.gstatus.end_txt += "ADD STUFF HERE"
+        self.gstatus.end_text += "\n\nADD STUFF HERE"
         self.gstatus.game_finished = True
         self.gstatus.activate()
 
@@ -713,9 +712,8 @@ class AudioController(object):
                     self.improv_cb(end=True)
                     self.load_part2()
                     self.last_part = True
-        if self.game_started  and self.last_part and self.mixer.get_num_generators() == 0:
+        if self.game_started  and self.last_part and self.mixer.get_num_generators() < 2:
             if self.gameover_cb and not self.called_gg:
-                print "calling gameover"
                 self.gameover_cb()
                 self.called_gg = True
         elif self.game_started and self.last_part:
@@ -896,6 +894,7 @@ class LyricsWord(InstructionGroup):
         self.improv_word = False
         self.anim_cb = anim_cb
         self.flying = False
+        self.called_fly = False
         self.pulsing = False
         self.pulsing_char= False
         self.start_size=40
@@ -951,23 +950,23 @@ class LyricsWord(InstructionGroup):
                 self.pulse_word()
                 self.rect.size=self.label.texture.size
                 self.rect.texture=self.label.texture
-                if self.improv_word:
+                if self.improv_word and not self.called_fly:
                     if self.anim_cb:
                         copy_word = self.copy()
-                    
                         copy_word.fly()
                         self.anim_cb(copy_word)
+                        self.called_fly = True
             return False
         except Exception as e:
             self.end_of_lyric=True
             self.pulse_word()
             self.rect.size=self.label.texture.size
-            if self.improv_word:
+            if self.improv_word and not self.called_fly:
                 if self.anim_cb:
                     copy_word = self.copy()
-                    
                     copy_word.fly()
                     self.anim_cb(copy_word)
+                    self.called_fly = True
                 
             return True
 #            print e
@@ -1173,7 +1172,7 @@ class LyricsPhrase(InstructionGroup):
                 elif i > start_ty and i < end_ty:
                     curr_phrase += glob_dict[i]
                     if s == len(line)-1:
-                        if l < len(lines)-1 and len(lines) > 1 :
+                        if l < len(lines)-1 and len(lines) > 1 and i + 1 != end_ty:
                             curr_phrase += " "
                         i += 1
                         self.create_word(curr_phrase,True)
@@ -1309,13 +1308,11 @@ class ImprovDisplay(InstructionGroup):
         self.objects = AnimGroup()
         self.improv_word = ""
         self.user_input = BasicLabel("",tpos=(Window.width*.3,Window.height*.65),color=(0,1,0,1),font_size=40)
-        self.improvise = BasicLabel("Improvise!!!",tpos=(Window.width*.3,Window.height*.7),font_size=40)
         self.improv_labels = {}
 
         
         if platform == "macosx":
             self.scale = Scale(0.7,0.7,0.7)
-            self.scale.origin = self.improvise.tpos
             self.translate = Translate(-Window.width*0.3,0)
         elif platform == "win":
             self.scale = Scale(.5,.5,0)
@@ -1332,7 +1329,6 @@ class ImprovDisplay(InstructionGroup):
         self.tpos = (Window.width*.3,Window.height*.5)
         self.time = 0
         self.add(self.user_input)
-        self.add(self.improvise)
         self.add(self.objects)
         self.add(PopMatrix())
 
@@ -1344,7 +1340,6 @@ class ImprovDisplay(InstructionGroup):
     #     self.add(self.scale)
     #     self.add(Translate(1000,0))
     #     self.add(self.user_input)
-    #     self.add(self.improvise)
     #     self.add(self.objects)
         
 
@@ -1359,7 +1354,6 @@ class ImprovDisplay(InstructionGroup):
         # self.add(self.scale)
         #self.add(Translate(-Window.width*.8,Window.height*.65))
         # self.add(self.user_input)
-        # self.add(self.improvise)
         # self.add(self.objects)
         self.scale_anim = KFAnim((0, self.scale.x,self.scale.y,self.scale.z), (0.5,1,1,0))
         if platform == "win" or platform == 'linux':
@@ -1380,7 +1374,6 @@ class ImprovDisplay(InstructionGroup):
 
     def restart(self):
         self.remove(self.user_input)
-        self.remove(self.improvise)
         self.remove(self.objects)
         self.objects = AnimGroup()
         self.improv_labels = {}
