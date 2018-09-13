@@ -10,7 +10,7 @@ from common.mixer import *
 from common.wavegen import *
 from common.wavesrc import *
 from common.gfxutil import *
-from common.kivyparticle import ParticleSystem
+# from common.kivyparticle import ParticleSystem
 
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics import Color, Ellipse, Line, Rectangle
@@ -23,7 +23,6 @@ from kivy.core.text import Label as CoreLabel
 from kivy.core.text.markup import MarkupLabel
 from kivy.core.text import LabelBase
 from kivy.utils import platform
-from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 
 import numpy as np
 import bisect
@@ -36,6 +35,7 @@ import textwrap
 from customlabel import BasicLabel, CustomLabel
 from random import random, randint,choice, uniform
 from copy import deepcopy
+
 
 
 
@@ -268,339 +268,335 @@ class GameStatusLabel(InstructionGroup):
 
         return True
 
-
-
-class GameScreen(Screen):
-    pass
-
-
-
+# class MainWidget(BaseWidget):
+#     def __init__(self):
+#         super(MainWidget, self).__init__()
+#         self.song = 'Stems/Fetish'
+#         self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb,gameover_cb=self.gameover_cb)
+#         self.gem_data = SongData()
+#         self.gem_data.read_data('Stems/Fetish-selected-finalpresentation-buffers-fixed.txt')
+#         self.gem_data.get_phrases()
         
-
-
-
-class MainWidget(BaseWidget):
-    def __init__(self):
-        super(MainWidget, self).__init__()
-        self.song = 'Stems/Fetish'
-        self.audio_cont = AudioController(self.song,improv_cb=self.improv_cb,gameover_cb=self.gameover_cb)
-        self.gem_data = SongData()
-        self.gem_data.read_data('Stems/Fetish-selected-finalpresentation-buffers-fixed.txt')
-        self.gem_data.get_phrases()
+#         #Improv stuff
+#         self.loopFilepath = 'Stems/improv/Fetish-improv-loops-better.txt'
+#         self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
+#         self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
         
-        #Improv stuff
-        self.loopFilepath = 'Stems/improv/Fetish-improv-loops-better.txt'
-        self.markFilepath = 'Stems/improv/Fetish-improv-marks.txt'
-        self.markRegionPath = 'Stems/improv/Fetish-improv-marks-regions.txt'
+#         #Loop = (Lyric, startTime, duration)
+#         #Mark  = Lyric: (startTime, endTime)
+#         self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
+#         self.bgImprovBuffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav') 
+#         self.vocalImprovBuffers = make_wave_buffers(self.markRegionPath, self.song + '_vocals.wav')
+#         self.marksHit = []
         
-        #Loop = (Lyric, startTime, duration)
-        #Mark  = Lyric: (startTime, endTime)
-        self.loops, self.marks = self.gem_data.read_improv(self.loopFilepath, self.markFilepath)
-        self.bgImprovBuffers = make_wave_buffers(self.loopFilepath, self.song + '_inst.wav') 
-        self.vocalImprovBuffers = make_wave_buffers(self.markRegionPath, self.song + '_vocals.wav')
-        self.marksHit = []
-        
-        self.improv = False 
-        self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf,self.ps_cb)
-        self.beat_disp = BeatMatchDisplay(self.gem_data,self.improv_disp.add_improv_word)
+#         self.improv = False 
+#         self.improv_disp = ImprovDisplay(self.vocalImprovBuffers,self.audio_cont.play_buf,self.ps_cb)
+#         self.beat_disp = BeatMatchDisplay(self.gem_data,self.improv_disp.add_improv_word)
 
-        self.sm = ScreenManager(transition=FadeTransition())
-        self.game_scrn = GameScreen(name="game")
-        self.sm.add_widget(self.game_scrn)
-        # self.add_widget(self.sm)
+#         self.sm = ScreenManager(transition=FadeTransition())
+#         self.title_scrn = TitleScreen(name="title")
+#         self.game_scrn = GameScreen(name="game")
+#         self.pause_scrn = PauseScreen(name="pause")
+#         self.end_scrn = EndScreen(name="end")
+#         self.sm.add_widget(self.title_scrn)
+#         self.sm.add_widget(self.game_scrn)
+#         self.sm.add_widget(self.pause_scrn)
+#         self.sm.add_widget(self.end_screen)
+
+#         # self.add_widget(self.sm)
         
-        with self.canvas.before:
-        #     # ADD BACKGROUND IMAGE TO GAME
-            self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
-            Color(0, 0, 0, 0.3)
-            self.sidebar = Rectangle(size = self.size ,pos =self.pos)
+#         with self.canvas.before:
+#         #     # ADD BACKGROUND IMAGE TO GAME
+#             self.bg_img = Rectangle(size=self.size,pos = self.pos,source="mic-booth.jpg")
+#             Color(0, 0, 0, 0.3)
+#             self.sidebar = Rectangle(size = self.size ,pos =self.pos)
             
 
         
 
-        self.canvas.add(Color(1,1,1,0.8))
-        self.canvas.add(self.beat_disp)
+#         self.canvas.add(Color(1,1,1,0.8))
+#         self.canvas.add(self.beat_disp)
 
-        self.improv_obj = AnimGroup()
-        self.improv_obj.add(self.improv_disp)
-        self.canvas.add(self.improv_obj)
+#         self.improv_obj = AnimGroup()
+#         self.improv_obj.add(self.improv_disp)
+#         self.canvas.add(self.improv_obj)
         
-        # self.canvas.add(PopMatrix())
-        self.score_label = ScoreLabel()
-        self.score_obj = AnimGroup()   
-        self.score_obj.add(self.score_label)
-        self.canvas.add(self.score_obj)
-        self.info = system_info_label()
-        self.canvas.add(self.info)
-        self.particles = deque()
-        self.player = Player(self.gem_data,self.beat_disp,self.improv_obj,self.improv_disp,self.audio_cont,self.stop_ps)
-        self.caps_on = False
-        # with self.canvas.after:
-        self.gstatus = GameStatusLabel(self.player.toggle_game)
-        self.gstatus_obj = AnimGroup()
-        self.gstatus_obj.add(self.gstatus)
-        self.canvas.add(self.gstatus_obj)
-        self.gstatus.activate()
-        # test_text = "HELLO WOLRD"
-        # test_text += "\nFinal Score: "+"{:,}".format(65464163)
-        # test_text += "\nLongest Streak: "+"{:,}".format(5264)
-        # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
-        # test_text += "\n\nPress 'r' to restart the game"
-        # self.hello = BasicLabel(test_text,tpos=(200,400),font_size=15,invert_text=False,font_name="DejaVuSans")
-        # self.hello = CustomLabel(test_text,font_size=15,font_name="DejaVuSans")
-        # self.hello.set_color(6,(0,1,0))
-        # # self.hello.set_bold(0)
-        # self.hello.set_color(6,(0,0,1))
-        # self.hello.set_bold(6)
-        # self.hello.set_italic(6)
-        # for i in range(5):
-        #     self.hello.set_color(i,(0,1,0))
-        # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
-        # self.canvas.add(self.rect)
-        # self.canvas.add(self.hello)
-        self.i = 0
+#         # self.canvas.add(PopMatrix())
+#         self.score_label = ScoreLabel()
+#         self.score_obj = AnimGroup()   
+#         self.score_obj.add(self.score_label)
+#         self.canvas.add(self.score_obj)
+#         self.info = system_info_label()
+#         self.canvas.add(self.info)
+#         self.particles = deque()
+#         self.player = Player(self.gem_data,self.beat_disp,self.improv_obj,self.improv_disp,self.audio_cont,self.stop_ps)
+#         self.caps_on = False
+#         # with self.canvas.after:
+#         self.gstatus = GameStatusLabel(self.player.toggle_game)
+#         self.gstatus_obj = AnimGroup()
+#         self.gstatus_obj.add(self.gstatus)
+#         self.canvas.add(self.gstatus_obj)
+#         self.gstatus.activate()
+#         # test_text = "HELLO WOLRD"
+#         # test_text += "\nFinal Score: "+"{:,}".format(65464163)
+#         # test_text += "\nLongest Streak: "+"{:,}".format(5264)
+#         # test_text += "\nAccuracy: "+"{0:.2f}".format(0.65654*100)+"%"
+#         # test_text += "\n\nPress 'r' to restart the game"
+#         # self.hello = BasicLabel(test_text,tpos=(200,400),font_size=15,invert_text=False,font_name="DejaVuSans")
+#         # self.hello = CustomLabel(test_text,font_size=15,font_name="DejaVuSans")
+#         # self.hello.set_color(6,(0,1,0))
+#         # # self.hello.set_bold(0)
+#         # self.hello.set_color(6,(0,0,1))
+#         # self.hello.set_bold(6)
+#         # self.hello.set_italic(6)
+#         # for i in range(5):
+#         #     self.hello.set_color(i,(0,1,0))
+#         # self.rect = Rectangle(size=self.hello.texture.size,pos=(50,50),texture=self.hello.texture)
+#         # self.canvas.add(self.rect)
+#         # self.canvas.add(self.hello)
+#         self.i = 0
 
 
-        self.bind(pos=self.update_bg)
-        self.bind(size=self.update_bg)
+#         self.bind(pos=self.update_bg)
+#         self.bind(size=self.update_bg)
 
 
 
-    def update_bg(self, *args):
-        self.bg_img.pos = self.pos
-        self.bg_img.size = self.size
-        width=float(self.size[0])
-        height=float(self.size[1])
-        self.sidebar.size=[width/2,height]
-        if platform == "macosx":
-            ##GAME SCREEN VARIABLES
-            self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
-            self.gstatus.bg_rect.size = self.gstatus.size
-            self.gstatus.alpha_rect.size = self.gstatus.size
+#     def update_bg(self, *args):
+#         self.bg_img.pos = self.pos
+#         self.bg_img.size = self.size
+#         width=float(self.size[0])
+#         height=float(self.size[1])
+#         self.sidebar.size=[width/2,height]
+#         if platform == "macosx":
+#             ##GAME SCREEN VARIABLES
+#             self.gstatus.size = (width,height)
+#             self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
+#             self.gstatus.bg_rect.size = self.gstatus.size
+#             self.gstatus.alpha_rect.size = self.gstatus.size
 
-            self.score_label.basic_label.tpos =[width*.8,height*.8]
-            self.improv_disp.tpos =[width*.3,height*.7]
-            self.improv_disp.translate.x =width*.85
-            self.improv_disp.translate.y =height*.2
-            self.beat_disp.start_pos = (20,height+10)
-        elif platform == "win":
-            self.gstatus.size = (width,height)
-            self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
-            self.gstatus.bg_rect.size = self.gstatus.size
-            self.gstatus.alpha_rect.size = self.gstatus.size
-            self.improv_disp.scale.origin = (0,0)
-            self.score_label.basic_label.tpos =[width*.8,height*.8]
-            self.improv_disp.tpos =[width*.3,height*.6]
-            self.improv_disp.translate.x = width*1.25
-            self.beat_disp.start_pos = (20,height+10)
+#             self.score_label.basic_label.tpos =[width*.8,height*.8]
+#             self.improv_disp.tpos =[width*.3,height*.7]
+#             self.improv_disp.translate.x =width*.85
+#             self.improv_disp.translate.y =height*.2
+#             self.beat_disp.start_pos = (20,height+10)
+#         elif platform == "win":
+#             self.gstatus.size = (width,height)
+#             self.gstatus.label.tpos=(.5*(width-self.gstatus.label.size[0]),.75*height)
+#             self.gstatus.bg_rect.size = self.gstatus.size
+#             self.gstatus.alpha_rect.size = self.gstatus.size
+#             self.improv_disp.scale.origin = (0,0)
+#             self.score_label.basic_label.tpos =[width*.8,height*.8]
+#             self.improv_disp.tpos =[width*.3,height*.6]
+#             self.improv_disp.translate.x = width*1.25
+#             self.beat_disp.start_pos = (20,height+10)
 
    
 
         
-    def on_key_down(self, keycode, modifiers):
-        # print 'key-down', keycode, modifiers
+#     def on_key_down(self, keycode, modifiers):
+#         # print 'key-down', keycode, modifiers
 
-        if keycode[1] == 'capslock':
-            self.caps_on = not self.caps_on
+#         if keycode[1] == 'capslock':
+#             self.caps_on = not self.caps_on
 
 
-        # Used for testing and debugging
-        if keycode[1] == 'tab':
-            # self.hello.text += "\nHello World Again!"
+#         # Used for testing and debugging
+#         if keycode[1] == 'tab':
+#             # self.hello.text += "\nHello World Again!"
             
-            if "shift" in modifiers:
-                self.player.game_paused = False
-                self.player.improv = True
-                self.improv_disp.start()
-            else:
+#             if "shift" in modifiers:
+#                 self.player.game_paused = False
+#                 self.player.improv = True
+#                 self.improv_disp.start()
+#             else:
 
-                self.improv_disp.add_improv_word(self.vocalImprovBuffers.keys()[self.i])
-                self.i += 1
-                self.i %= len(self.vocalImprovBuffers)
-        # play / pause toggle
-        if keycode[1] == 'enter':
-            if "shift" in modifiers:
-                if self.gstatus.is_active:
-                    self.gstatus.deactivate()
-                else:
-                    self.gstatus.activate()
-                self.player.toggle_game()
-                # self.canvas.remove(self.gstatus_obj)
-                # self.gstatus.transistion()
-            elif "ctrl" in modifiers:
-                self.improv = False
-                self.player.improv = False
-                self.beat_disp.improv = False
-                self.audio_cont.improv = False
-                if self.gstatus.is_active:
-                    self.gstatus.deactivate()
-                self.gstatus.restart()
-                self.gstatus.activate()
-                self.player.restart_game()
+#                 self.improv_disp.add_improv_word(self.vocalImprovBuffers.keys()[self.i])
+#                 self.i += 1
+#                 self.i %= len(self.vocalImprovBuffers)
+#         # play / pause toggle
+#         if keycode[1] == 'enter':
+#             if "shift" in modifiers:
+#                 if self.gstatus.is_active:
+#                     self.gstatus.deactivate()
+#                 else:
+#                     self.gstatus.activate()
+#                 self.player.toggle_game()
+#                 # self.canvas.remove(self.gstatus_obj)
+#                 # self.gstatus.transistion()
+#             elif "ctrl" in modifiers:
+#                 self.improv = False
+#                 self.player.improv = False
+#                 self.beat_disp.improv = False
+#                 self.audio_cont.improv = False
+#                 if self.gstatus.is_active:
+#                     self.gstatus.deactivate()
+#                 self.gstatus.restart()
+#                 self.gstatus.activate()
+#                 self.player.restart_game()
 
-        #pass spacebar values to player as " "
-        if keycode[1] == 'spacebar':
-            self.player.on_button_down(" ")
-            # self.hello.text += " "
-            # print "down ", "spacebar"
+#         #pass spacebar values to player as " "
+#         if keycode[1] == 'spacebar':
+#             self.player.on_button_down(" ")
+#             # self.hello.text += " "
+#             # print "down ", "spacebar"
         
         
-        #Use forward slash to end improv mode
-        if keycode[1] == '\\':
-            self.improv = False
+#         #Use forward slash to end improv mode
+#         if keycode[1] == '\\':
+#             self.improv = False
             
 
-        # button down
-        letter = lookup(keycode[1], string.ascii_letters, string.ascii_letters)
-        if letter != None:
-            if self.caps_on or 'shift' in modifiers:
-                letter = letter.upper()
-            self.player.on_button_down(letter)
-            # self.hello.text += letter
+#         # button down
+#         letter = lookup(keycode[1], string.ascii_letters, string.ascii_letters)
+#         if letter != None:
+#             if self.caps_on or 'shift' in modifiers:
+#                 letter = letter.upper()
+#             self.player.on_button_down(letter)
+#             # self.hello.text += letter
 
-            # print "down ", letter , keycode[1]
+#             # print "down ", letter , keycode[1]
         
-        #Disable punctuation in improv mode:
-        if not self.improv:
-            spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
-            if spec_char != None:
-                self.player.on_button_down(spec_char)
-#                print "down ", spec_char
-#                self.hello.text += spec_char
+#         #Disable punctuation in improv mode:
+#         if not self.improv:
+#             spec_char = lookup(keycode[1], string.punctuation, string.punctuation)
+#             if spec_char != None:
+#                 self.player.on_button_down(spec_char)
+# #                print "down ", spec_char
+# #                self.hello.text += spec_char
                
             
-#        #Dev Tools for Improv:
-#        #Testing buffer playback
-#        bufferKeys = ['Loop1', 'Loop2', 'LoopF', 'Final']
-#        if keycode[1] == 'j':
-#            self.loop1 = WaveGenerator(self.buffers[bufferKeys[0]], True)
-#            self.audio_cont.mixer.add(self.loop1)
-#        
-#        if keycode[1] == 'k':
-#            self.loop2 = WaveGenerator(self.buffers[bufferKeys[1]], True)
-#            self.audio_cont.mixer.add(self.loop2)
-#            
-#        if keycode[1] == 'l':
-#            self.loopF = WaveGenerator(self.buffers[bufferKeys[2]], True)
-#            self.audio_cont.mixer.add(self.loopF)
-#        
-#        if keycode[1] == ';':
-#            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
-#            self.audio_cont.mixer.add(self.final)
+# #        #Dev Tools for Improv:
+# #        #Testing buffer playback
+# #        bufferKeys = ['Loop1', 'Loop2', 'LoopF', 'Final']
+# #        if keycode[1] == 'j':
+# #            self.loop1 = WaveGenerator(self.buffers[bufferKeys[0]], True)
+# #            self.audio_cont.mixer.add(self.loop1)
+# #        
+# #        if keycode[1] == 'k':
+# #            self.loop2 = WaveGenerator(self.buffers[bufferKeys[1]], True)
+# #            self.audio_cont.mixer.add(self.loop2)
+# #            
+# #        if keycode[1] == 'l':
+# #            self.loopF = WaveGenerator(self.buffers[bufferKeys[2]], True)
+# #            self.audio_cont.mixer.add(self.loopF)
+# #        
+# #        if keycode[1] == ';':
+# #            self.final = WaveGenerator(self.buffers[bufferKeys[3]], True)
+# #            self.audio_cont.mixer.add(self.final)
             
-    def on_key_up(self, keycode):
-        # button up
-        letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
-        if letter != None:
-            self.player.on_button_up(letter)
+#     def on_key_up(self, keycode):
+#         # button up
+#         letter = lookup(keycode[1], string.ascii_letters, sorted(string.ascii_letters))
+#         if letter != None:
+#             self.player.on_button_up(letter)
 
-        spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
-        if spec_char != None:
-            self.player.on_button_up(spec_char)
+#         spec_char = lookup(keycode[1], string.punctuation, sorted(string.punctuation))
+#         if spec_char != None:
+#             self.player.on_button_up(spec_char)
             
             
-#        #Dev Tools for Improv
-#        #Testing buffer placback
-#        if keycode[1] == 'j':
-#            self.audio_cont.mixer.remove(self.loop1)
-#            
-#        if keycode[1] == 'k':
-#            self.audio_cont.mixer.remove(self.loop2)
-#            
-#        if keycode[1] == 'l':
-#            self.audio_cont.mixer.remove(self.loopF)
-#            
-#        if keycode[1] == ';':
-#            self.audio_cont.mixer.remove(self.final)
+# #        #Dev Tools for Improv
+# #        #Testing buffer placback
+# #        if keycode[1] == 'j':
+# #            self.audio_cont.mixer.remove(self.loop1)
+# #            
+# #        if keycode[1] == 'k':
+# #            self.audio_cont.mixer.remove(self.loop2)
+# #            
+# #        if keycode[1] == 'l':
+# #            self.audio_cont.mixer.remove(self.loopF)
+# #            
+# #        if keycode[1] == ';':
+# #            self.audio_cont.mixer.remove(self.final)
             
-    def improv_cb(self,end=False):
-        if end:
-            self.improv_disp.restart()
-            self.improv = False
-            self.player.improv = False
-            self.beat_disp.improv = False
-            self.audio_cont.improv = False
-        else:
-            self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
-            self.improv_disp.start()
-            self.improv = True
-            self.player.improv = True
-            self.beat_disp.improv = True
-            self.audio_cont.improv = True
+#     def improv_cb(self,end=False):
+#         if end:
+#             self.improv_disp.restart()
+#             self.improv = False
+#             self.player.improv = False
+#             self.beat_disp.improv = False
+#             self.audio_cont.improv = False
+#         else:
+#             self.audio_cont.load_improv([self.bgImprovBuffers["Loop1"],self.bgImprovBuffers["Loop2"],self.bgImprovBuffers["Final"]])
+#             self.improv_disp.start()
+#             self.improv = True
+#             self.player.improv = True
+#             self.beat_disp.improv = True
+#             self.audio_cont.improv = True
 
-    def gameover_cb(self):
+#     def gameover_cb(self):
         
-        self.gstatus.end_text += "\n\nAccuracy: {:.2%}".format(self.player.get_words_hit()/self.beat_disp.get_max_words())
-        self.gstatus.end_text += "\nWords Hit: {}".format(self.player.get_words_hit())
-        self.gstatus.end_text += "\n\nPress 'ctrl enter' to restart the game"
-        self.gstatus.game_finished = True
-        self.gstatus.activate()
+#         self.gstatus.end_text += "\n\nAccuracy: {:.2%}".format(self.player.get_words_hit()/self.beat_disp.get_max_words())
+#         self.gstatus.end_text += "\nWords Hit: {}".format(self.player.get_words_hit())
+#         self.gstatus.end_text += "\n\nPress 'ctrl enter' to restart the game"
+#         self.gstatus.game_finished = True
+#         self.gstatus.activate()
 
-    def ps_cb(self,pos,color,duration=1.0):
-        """
-        Add particle systems to screen on succesful event
-        """
-        ps = ParticleSystem('particle/particle.pex')
-        ps.emitter_x = pos[0]
-        ps.emitter_y = pos[1]
-        ps.life_span = 10
-        ps.life_span_variance = 0
-        # ps.speed = 500
-        # color = color
-        # rgb_color = hsv_to_rgb(*color)
-        ps.start_color = [x for x in color]+[1.0]
-        ps.end_color = [x for x in color]+[1.0]
-        self.add_widget(ps)
-        self.particles.append(ps)
-        ps.stop(True)
-        ps.start()
+#     def ps_cb(self,pos,color,duration=1.0):
+#         """
+#         Add particle systems to screen on succesful event
+#         """
+#         ps = ParticleSystem('particle/particle.pex')
+#         ps.emitter_x = pos[0]
+#         ps.emitter_y = pos[1]
+#         ps.life_span = 10
+#         ps.life_span_variance = 0
+#         # ps.speed = 500
+#         # color = color
+#         # rgb_color = hsv_to_rgb(*color)
+#         ps.start_color = [x for x in color]+[1.0]
+#         ps.end_color = [x for x in color]+[1.0]
+#         self.add_widget(ps)
+#         self.particles.append(ps)
+#         ps.stop(True)
+#         ps.start()
 
-        kivyClock.schedule_once(self.stop_ps,duration)
-        # ps.stop(True)
+#         kivyClock.schedule_once(self.stop_ps,duration)
+#         # ps.stop(True)
 
-    def stop_ps(self,dt):
-        if len(self.particles) > 0:
-            ps = self.particles.popleft()
-            ps.stop(True)
+#     def stop_ps(self,dt):
+#         if len(self.particles) > 0:
+#             ps = self.particles.popleft()
+#             ps.stop(True)
         
 
-    def on_update(self) :
-        if kivyClock.get_fps() > 40:
-            self.player.on_update()
+#     def on_update(self) :
+#         if kivyClock.get_fps() > 40:
+#             self.player.on_update()
 
             
-            # if not self.improv_disp.pre_started:
-            #     self.improv_disp._scale = (self.improv_disp._scale[0]+0.001,self.improv_disp._scale[1]+0.001,0)
-            #     self.improv_disp._trans = (self.improv_disp._trans[0]-5,self.improv_disp._trans[1]+0.1)
-            #Optimization for paused
-#            self.player.game_paused = False
-#            self.beat_disp.game_paused = False
-#        elif kivyClock.get_fps() <= 40:
-#            self.player.game_paused = True
-#            self.beat_disp.game_paused = True
-        # self.info.text = str(Window.mouse_pos)
-        # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
-        # self.info.text += '\nfps:%d' % kivyClock.get_fps()
-        # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
-        # if not self.player.game_started:
-        #     self.gstatus_obj.on_update()
-        self.improv_obj.on_update()
-        self.score_label.basic_label.text = "Score"
-        self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
-            # self.score_label.basic_label.font_size = 40.5
-        if self.player.score_change ==True:
-            self.score_obj.on_update()
-        # else:
-        #     self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
-        #     self.score_label.basic_label.font_size = 35
+#             # if not self.improv_disp.pre_started:
+#             #     self.improv_disp._scale = (self.improv_disp._scale[0]+0.001,self.improv_disp._scale[1]+0.001,0)
+#             #     self.improv_disp._trans = (self.improv_disp._trans[0]-5,self.improv_disp._trans[1]+0.1)
+#             #Optimization for paused
+# #            self.player.game_paused = False
+# #            self.beat_disp.game_paused = False
+# #        elif kivyClock.get_fps() <= 40:
+# #            self.player.game_paused = True
+# #            self.beat_disp.game_paused = True
+#         # self.info.text = str(Window.mouse_pos)
+#         # self.info.text += '\nload:%.2f' % self.audio_cont.audio.get_cpu_load()
+#         # self.info.text += '\nfps:%d' % kivyClock.get_fps()
+#         # self.info.text += '\nobjects:%d' % len(self.beat_disp.objects.objects)
+#         # if not self.player.game_started:
+#         #     self.gstatus_obj.on_update()
+#         self.improv_obj.on_update()
+#         self.score_label.basic_label.text = "Score"
+#         self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+#             # self.score_label.basic_label.font_size = 40.5
+#         if self.player.score_change ==True:
+#             self.score_obj.on_update()
+#         # else:
+#         #     self.score_label.basic_label.text += "\n"+"{:,}".format(self.player.score)
+#         #     self.score_label.basic_label.font_size = 35
 
-        #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
-        # self.improv = self.player.improv
+#         #make sure improv mode stays updated. TODO: Find out which part of the game is keeping track of improv mode. Depends on how we trigger it...
+#         # self.improv = self.player.improv
 
         
-        if self.audio_cont.last_part:
-            self.update_bg()
+#         if self.audio_cont.last_part:
+#             self.update_bg()
         
 
 # creates the Audio driver
@@ -654,18 +650,19 @@ class AudioController(object):
             self.called_gg = False
 
     def restart(self):
-        if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
-            """
-            Needed to restart game
-            """
-            self.mixer.remove_all()
-            self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
-            self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
-            self.last_part = False
-            self.game_paused = True
-            self.game_started = False
-            self.improv = False
-            self.called_gg = False
+        # if self.mixer.contains(self.bg_gen) or self.mixer.contains(self.improv_sect):
+        #     """
+        #     Needed to restart game
+        #     """
+        print "AUDIO RESTARTED PROPERLY"
+        self.mixer.remove_all()
+        self.bg_audio = WaveFile(self.song_path+'_inst_1.wav')
+        self.solo_audio = WaveFile(self.song_path+'_vocals_1.wav')
+        self.last_part = False
+        self.game_paused = True
+        self.game_started = False
+        self.improv = False
+        self.called_gg = False
 
     # start / stop the song
     def toggle(self):
@@ -727,9 +724,11 @@ class AudioController(object):
         if not self.game_paused and self.game_started and not self.last_part:
             if self.mixer.get_num_generators() == 0:
                 if not self.improv and self.improv_cb:
+                    print "GOING INTO IMPROV MODE"
                     self.improv_cb()
                 elif self.improv and self.improv_cb:
                     self.improv_cb(end=True)
+                    print "IMPROV MODE ENDED"
                     self.load_part2()
                     self.last_part = True
         if self.game_started  and self.last_part and self.mixer.get_num_generators() < 2:
@@ -878,14 +877,14 @@ def wrap_text(text,font_size,text_size):
 
 
 class LyricsWord(InstructionGroup):
-    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,improv_cb,interactive=False,improv="",anim_cb=None):
+    def __init__(self,pos,color,text,start_t,end_t,vel,point_cb,add_improv_word_cb,interactive=False,improv="",anim_cb=None):
         super(LyricsWord, self).__init__()
         self.text = text
         self.interactive = interactive
         self.end_of_lyric = False
         self.pos = np.array(pos, dtype=np.float)
         self.point_cb = point_cb
-        self.improv_cb = improv_cb
+        self.add_improv_word_cb = add_improv_word_cb
         self.color = color
         if platform == "win":
             self.label = CustomLabel(text,color=color,halign=None,invert_text=False, font_size=40,font_name="comic")
@@ -995,7 +994,7 @@ class LyricsWord(InstructionGroup):
 
     def copy(self):
         label_copy = self.label.copy()
-        new_word = LyricsWord(self.pos.copy(),self.color,self.text,self.start_time,self.end_time,self.vel,self.point_cb,self.improv_cb,interactive=self.interactive,improv=self.improv)
+        new_word = LyricsWord(self.pos.copy(),self.color,self.text,self.start_time,self.end_time,self.vel,self.point_cb,self.add_improv_word_cb,interactive=self.interactive,improv=self.improv)
         new_word.label = label_copy
         new_word.rect.texture = label_copy.texture
         return new_word
@@ -1045,7 +1044,7 @@ class LyricsWord(InstructionGroup):
             self.rect.pos = pos
             self.time += dt
             if not self.flying_anim.is_active(self.time):
-                self.improv_cb(self.text.strip())
+                self.add_improv_word_cb(self.text.strip())
             return self.flying_anim.is_active(self.time)
         else:
             self.time += dt
@@ -1100,7 +1099,7 @@ class LyricsWord(InstructionGroup):
 
 
 class LyricsPhrase(InstructionGroup):
-    def __init__(self,pos,color,text,text_to_type,improv_word,start_t,end_t,queue_cb,point_cb,improv_cb,anim_cb):
+    def __init__(self,pos,color,text,text_to_type,improv_word,start_t,end_t,queue_cb,point_cb,add_improv_word_cb,anim_cb):
         super(LyricsPhrase, self).__init__()
         self.text=text
         self.text_to_type=text_to_type
@@ -1118,7 +1117,7 @@ class LyricsPhrase(InstructionGroup):
         # self.scroll_t = 25
         self.vel = -self.pos[1]/self.scroll_t
         self.point_cb = point_cb
-        self.improv_cb = improv_cb
+        self.add_improv_word_cb = add_improv_word_cb
         self.anim_cb = anim_cb
         self.create_phrases()
         self.num_words = len(self.word_deque)
@@ -1138,7 +1137,7 @@ class LyricsPhrase(InstructionGroup):
         # print "curr_phrase: %s, line num: %d" % (curr_phrase,l)
         pos = (self.prev_pos[0]+self.size[0],self.prev_pos[1])
         # print "curr_phrase: %s, line num: %d" % (curr_phrase,l)
-        word = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,self.improv_cb,interactive=interactive,improv=self.improv_word)
+        word = LyricsWord(pos,self.color,phrase,self.start_time,self.end_time,self.vel,self.point_cb,self.add_improv_word_cb,interactive=interactive,improv=self.improv_word)
         self.prev_pos = pos
         self.size = word.label.texture.size
         self.objects.add(word)
@@ -1335,6 +1334,7 @@ class ImprovDisplay(InstructionGroup):
         super(ImprovDisplay, self).__init__()
         self.phrases = phrases
         self.add(PushMatrix())
+
         
         self.letter_colors={}
 
@@ -1343,15 +1343,17 @@ class ImprovDisplay(InstructionGroup):
 
         
         if platform == "macosx":
-            self.scale = Scale(0.7,0.7,0.7)
-            self.translate = Translate(-Window.width*0.3,0)
+            self.scale = Scale(0.7,0.7,0)
+            self.scale.origin = (0,0)
+            self.translate = Translate(Window.width*1.3,Window.height*0.65)
         elif platform == "win":
             self.scale = Scale(.5,.5,0)
             self.scale.origin = (0,0)
             self.translate = Translate(Window.width*1.25,Window.height*0.55)
         self.add(self.scale)
         self.add(self.translate)
-
+        self.add(Color(1,0,0,0.5))
+        self.add(Rectangle(pos=(0,0),size=(Window.width,Window.height)))
         self.audio_cb = audio_cb
         self.ps_cb = ps_cb
         self.letter_buf = OrderedDict()
@@ -1390,7 +1392,7 @@ class ImprovDisplay(InstructionGroup):
         if platform == "win" or platform == 'linux':
             self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,-45))
         elif platform == 'macosx':
-            self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,0))
+            self.trans_anim = KFAnim((0, self._trans[0],self._trans[1]),(0.5,0,-45))
         # self.add(PopMatrix())
 
         
@@ -1404,29 +1406,36 @@ class ImprovDisplay(InstructionGroup):
         #     i += 1
 
     def restart(self):
-        self.remove(self.objects)
-        self.add(PushMatrix())
-        
+        self.clear()
         self.letter_colors={}
 
         self.objects = AnimGroup()
         self.improv_labels = {}
 
+        self.add(PushMatrix())
+        
+        
         
         if platform == "macosx":
-            self.scale = Scale(0.7,0.7,0.7)
-            self.translate = Translate(-Window.width*0.3,0)
+            self.scale = Scale(0.7,0.7,0)
+            self.scale.origin = (0,0)
+            self.translate = Translate(Window.width*1.3,Window.height*0.65)
         elif platform == "win":
             self.scale = Scale(.5,.5,0)
             self.scale.origin = (0,0)
             self.translate = Translate(Window.width*1.25,Window.height*0.55)
+           
         self.add(self.scale)
-        self.add(self.translate)
+        self.add(self.translate) 
+        
         self.pre_started = True
         self.tpos = (Window.width*.3,Window.height*.5)
         self.time = 0
         self.add(self.objects)
         self.add(PopMatrix())
+
+    def clear(self):
+        self.remove(self.objects)
 
 
     def create_hit_dict(self,phrases):
@@ -1520,11 +1529,11 @@ class ImprovDisplay(InstructionGroup):
 
 # Displays and controls all game elements: Nowbar, Buttons, BarLines, Gems.
 class BeatMatchDisplay(InstructionGroup):
-    def __init__(self, gem_data,improv_cb):
+    def __init__(self, gem_data,add_improv_word_cb):
         super(BeatMatchDisplay, self).__init__()
         self.start_pos = (20,Window.height+10)
         self.gem_data = gem_data
-        self.improv_cb = improv_cb
+        self.add_improv_word_cb = add_improv_word_cb
         self.objects = AnimGroup()
         self.score = 0
         # self.add(PushMatrix(stack='projection_mat'))
@@ -1554,7 +1563,7 @@ class BeatMatchDisplay(InstructionGroup):
         # print phrases
         for data in phrases:
             phrase,phrase_to_type,improv_word,start,end = data
-            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.improv_cb,
+            lyric = LyricsPhrase(self.start_pos,(1,1,1),phrase,phrase_to_type,improv_word,start,end,self.pop_lyric,self.add_points,self.add_improv_word_cb,
                                     self.fly_cb)
             self.objects.add(lyric)
             self.lyrics_deque.append(lyric)
@@ -1618,7 +1627,9 @@ class BeatMatchDisplay(InstructionGroup):
     def on_update(self) :
 
 #        if not self.game_paused and not self.improv:
+
         if not self.game_paused:
+
             self.objects.on_update()
         
 
@@ -1661,8 +1672,8 @@ class Player(object):
     def restart_game(self):
         self.display.restart()
         self.audio_ctrl.restart()
-        self.improv_display.restart()
-        # self.word_hits = 0
+        # self.improv_display.restart()
+        self.word_hits = 0
         self.longest_streak = 0
         self.game_paused = True
         self.game_started = False
@@ -1723,4 +1734,4 @@ class Player(object):
 
 
 
-run(MainWidget)
+# run(MainWidget)
